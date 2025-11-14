@@ -7,6 +7,7 @@ import DirectivePushItem from './DirectivePushItem';
 import KnowledgeSyncItem from './KnowledgeSyncItem';
 import ProactiveAlertItem from './ProactiveAlertItem';
 import WeakPasswordAlerts from './WeakPasswordAlerts';
+import AutomatedRemediationItem from './AutomatedRemediationItem';
 
 interface ServerBrainFeedProps {
   events: ServerEvent[];
@@ -19,7 +20,6 @@ const ServerBrainFeed: React.FC<ServerBrainFeedProps> = ({ events, onSelectItem 
     const weak: ServerEvent[] = [];
     const others: ServerEvent[] = [];
     
-    // Reverse events once for chronological display
     const reversedEvents = [...events].reverse();
 
     reversedEvents.forEach(event => {
@@ -60,12 +60,9 @@ const ServerBrainFeed: React.FC<ServerBrainFeedProps> = ({ events, onSelectItem 
                       return <KnowledgeSyncItem key={event.id} event={event} onSelectItem={onSelectItem}/>;
                   case 'PROACTIVE_ALERT_PUSH':
                       return <ProactiveAlertItem key={event.id} event={event} onSelectItem={onSelectItem}/>;
+                  case 'AUTOMATED_REMEDIATION':
+                      return <AutomatedRemediationItem key={event.id} event={event} onSelectItem={onSelectItem}/>;
                   default:
-                      // This case should ideally not be hit if types are correct
-                      const unhandledEvent: any = event;
-                      if(unhandledEvent && unhandledEvent.payload && unhandledEvent.payload.title) {
-                        return <div key={event.id} className="p-2 text-xs text-red-400">Unhandled Event Type: {unhandledEvent.payload.title}</div>
-                      }
                       return null;
               }
             })}

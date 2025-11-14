@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AllEventTypes, Alert, ServerEvent, AggregatedEvent, LearningUpdate, DirectivePush, KnowledgeSync, ProactiveAlertPush, VulnerabilityDetails } from '../types';
+import { AllEventTypes, Alert, ServerEvent, AggregatedEvent, LearningUpdate, DirectivePush, KnowledgeSync, ProactiveAlertPush, VulnerabilityDetails, AutomatedRemediation } from '../types';
 import PayloadDetailsView from './PayloadDetailsView';
 
 interface DetailViewProps {
@@ -73,6 +73,19 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onReturn }) => {
                              <div className="bg-slate-900/70 p-4 rounded-lg border border-slate-700">
                                 <h4 className="text-sm font-semibold text-gray-400 mb-2">Intelligence Payload</h4>
                                 {payload.details ? <VulnerabilityDetailsDisplay details={payload.details} /> : <PayloadDetailsView payload={payload} /> }
+                             </div>
+                        </div>
+                    );
+                }
+                 case 'AUTOMATED_REMEDIATION': {
+                    const payload = event.payload as AutomatedRemediation;
+                     return (
+                        <div>
+                             <h3 className="text-lg font-bold text-orange-400 mb-2">Automated Remediation Triggered</h3>
+                             <p className="text-sm text-gray-400 mb-4">Immediate response to critical threat: {payload.threat_name}</p>
+                             <div className="bg-slate-900/70 p-4 rounded-lg border border-slate-700">
+                                <h4 className="text-sm font-semibold text-gray-400 mb-2">Remediation Details</h4>
+                                <PayloadDetailsView payload={payload} />
                              </div>
                         </div>
                     );

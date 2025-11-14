@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChatMessage, MessageRole, Alert, AlertSeverity, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, AlertContext, KnowledgeContribution } from './types';
+import { ChatMessage, MessageRole, Alert, AlertSeverity, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, AlertContext, KnowledgeContribution, AutomatedRemediation } from './types';
 import { getChatResponse } from './services/geminiService';
 import Header from './components/Header';
-import ResponseDisplay from './components/ResponseDisplay';
 import AlertFeed from './components/AlertFeed';
 import ServerBrainFeed from './components/ServerBrainFeed';
 import { sha256 } from './utils/hashing';
@@ -11,8 +10,10 @@ import DeploymentModal from './components/DeploymentModal';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
 import SettingsModal from './components/SettingsModal';
-import PromptInput from './components/PromptInput';
 import LearningAnalyticsModal from './components/LearningAnalyticsModal';
+import ChatPanel from './components/ChatPanel';
+import NavigationSidebar from './components/NavigationSidebar';
+
 
 const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
     {
@@ -23,7 +24,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'svchost.exe', 
             file_count: 1024, 
             pattern: 'mass_encryption.fast',
-            device: { type: 'Desktop', os: 'Windows', hostname: 'FINANCE-PC-01' },
+            device: { type: 'Desktop', os: 'Windows', hostname: 'FINANCE-PC-01', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Financial', country: 'USA', continent: 'North America', region: 'NA-East' }
         }
     },
@@ -34,19 +35,19 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
         raw_data: { 
             process: 'mimikatz.exe', 
             target_process: 'lsass.exe',
-            device: { type: 'Server', os: 'Windows', hostname: 'DC-01' },
+            device: { type: 'Server', os: 'Windows', hostname: 'DC-01', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Government', country: 'Germany', continent: 'Europe', region: 'EU-Central' }
         }
     },
     {
         severity: AlertSeverity.MEDIUM,
         title: 'Anomalous Network Connection',
-        description: 'Outbound connection to a known malicious IP address.',
+        description: 'Outbound connection to a known malicious IP from a device.',
         raw_data: { 
             process: 'powershell.exe', 
             destination_ip: '104.21.5.19',
             port: 4444,
-            device: { type: 'Desktop', os: 'Windows', hostname: 'HR-PC-22' },
+            device: { type: 'Desktop', os: 'Windows', hostname: 'HR-PC-22', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Healthcare', country: 'UK', continent: 'Europe', region: 'EU-West' }
         }
     },
@@ -58,7 +59,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'rundll32.exe',
             memory_address: '0x00007FFD7A4E0000-0x00007FFD7A4F0000',
             signature: 'CobaltStrike.Beacon.Generic',
-            device: { type: 'Server', os: 'Linux', hostname: 'WEB-SRV-03' },
+            device: { type: 'Server', os: 'Linux', hostname: 'WEB-SRV-03', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Manufacturing', country: 'Japan', continent: 'Asia', region: 'APAC' }
         }
     },
@@ -70,7 +71,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             application: 'Salesforce',
             username: 'amanda.b',
             password_strength: 'weak',
-            device: { type: 'Laptop', os: 'macOS', hostname: 'MKTG-MAC-05' },
+            device: { type: 'Laptop', os: 'macOS', hostname: 'MKTG-MAC-05', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Retail', country: 'USA', continent: 'North America', region: 'NA-West' }
         }
     },
@@ -82,7 +83,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'sqlplus.exe',
             user: 'prod_db_user',
             query: 'SELECT * FROM customers;',
-            device: { type: 'Server', os: 'Linux', hostname: 'APP-SRV-01' },
+            device: { type: 'Server', os: 'Linux', hostname: 'APP-SRV-01', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Financial', country: 'Brazil', continent: 'South America', region: 'SA-East' }
         }
     },
@@ -93,7 +94,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
         raw_data: {
             url: 'http://totally-safe-bank.com/login',
             application: 'Chrome',
-            device: { type: 'Mobile', os: 'Android', hostname: 'samsung-sm-g998u1' },
+            device: { type: 'Mobile', os: 'Android', hostname: 'samsung-sm-g998u1', firewall_status: 'Enabled', disk_encryption: 'Enabled' },
             context: { industry: 'Retail', country: 'Australia', continent: 'Australia', region: 'APAC' }
         }
     },
@@ -121,249 +122,282 @@ const vulnerabilityIntelSources: LearningUpdate[] = [
     },
      { 
       source: 'OSV', 
-      summary: 'Critical vulnerability in open-source library `left-pad` affecting numerous projects.',
-      details: { cve_id: 'OSV-2022-1234', cvss_score: 8.5, affected_software: 'left-pad@1.3.0', advisory_link: 'https://osv.dev/' }
+      summary: 'Critical vulnerability in popular open-source library `left-pad` discovered.',
+      details: { cve_id: 'OSV-2024-1234', cvss_score: 9.1, affected_software: 'left-pad@1.3.0', advisory_link: 'https://osv.dev/vulnerability/OSV-2024-1234' }
     },
 ];
 
-
 const App: React.FC = () => {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-  // Simulation State
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [serverEvents, setServerEvents] = useState<ServerEvent[]>([]);
-  const [serverKnowledgeLevel, setServerKnowledgeLevel] = useState(45);
-  const [agentKnowledgeLevel, setAgentKnowledgeLevel] = useState(60);
-  const [correlationActivity, setCorrelationActivity] = useState<number[]>(Array(30).fill(0));
-  const [isDeploymentModalOpen, setIsDeploymentModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [selectedDetailItem, setSelectedDetailItem] = useState<AllEventTypes | null>(null);
-  const [learningLog, setLearningLog] = useState<KnowledgeContribution[]>([]);
-  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
-  
-  const [contextualThreatTracker, setContextualThreatTracker] = useState<Record<string, { count: number, threats: Set<string> }>>({});
-
-  const intervalRef = useRef<number>();
-
-  const updateServerKnowledge = useCallback((gain: number, source: string) => {
-    setServerKnowledgeLevel(prev => {
-        const newTotal = Math.min(100, prev + gain);
-        const newContribution: KnowledgeContribution = {
-            id: `kc-${Date.now()}`,
-            timestamp: new Date().toLocaleTimeString(),
-            source,
-            points: newTotal - prev,
-            newTotal
-        };
-        setLearningLog(prevLog => [newContribution, ...prevLog.slice(0, 99)]);
-        return newTotal;
-    });
-  }, []);
-
-  const processAlert = useCallback(async (alert: Alert) => {
-    // 1. Sanitize & Aggregate (Simulate LWServer)
-    const sanitized_data: Record<string, any> = {};
-    for (const [key, value] of Object.entries(alert.raw_data || {})) {
-        if (key === 'username') {
-            sanitized_data['user_hash'] = await sha256(String(value));
-        } else if (key === 'password_strength') {
-            sanitized_data[key] = value;
-        } else if (key === 'signature') {
-             sanitized_data['signature_hash'] = await sha256(String(value));
-        } else if (key !== 'device' && key !== 'context') {
-            sanitized_data[key] = value;
-        }
-    }
-
-    const aggregatedEvent: AggregatedEvent = {
-        title: alert.title,
-        severity: alert.severity,
-        count: 1,
-        sanitized_data,
-        first_seen: alert.timestamp,
-        last_seen: alert.timestamp,
-        context: alert.raw_data?.context
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [serverEvents, setServerEvents] = useState<ServerEvent[]>([]);
+    const [knowledgeLevel, setKnowledgeLevel] = useState(10);
+    const [agentKnowledgeLevel, setAgentKnowledgeLevel] = useState(5);
+    const [isDeploymentModalOpen, setDeploymentModalOpen] = useState(false);
+    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+    const [isAnalyticsModalOpen, setAnalyticsModalOpen] = useState(false);
+    const [selectedDetailItem, setSelectedDetailItem] = useState<AllEventTypes | null>(null);
+    const [contextualThreatTracker, setContextualThreatTracker] = useState<Record<string, { count: number; titles: Set<string> }>>({});
+    const [correlationActivity, setCorrelationActivity] = useState<number[]>(new Array(20).fill(0));
+    const [learningLog, setLearningLog] = useState<KnowledgeContribution[]>([]);
+    
+    const intervalRef = useRef<number | undefined>();
+    let alertCounter = 0;
+    
+    const logKnowledgeContribution = (source: string, points: number) => {
+        setKnowledgeLevel(currentLevel => {
+            const newTotal = Math.min(100, currentLevel + points);
+            const newEntry: KnowledgeContribution = {
+                id: `log-${Date.now()}-${Math.random()}`,
+                // FIX: Pass an empty array to toLocaleTimeString to satisfy environments that expect an argument.
+                timestamp: new Date().toLocaleTimeString([]),
+                source,
+                points,
+                newTotal,
+            };
+            setLearningLog(prevLog => [newEntry, ...prevLog].slice(0, 100)); // Keep last 100 entries
+            return newTotal;
+        });
     };
-    
-    // 2. Server Brain Learns & Acts
-    setServerEvents(prev => [{ id: `se-${Date.now()}`, type: 'AGGREGATED_EVENT', timestamp: alert.timestamp, payload: aggregatedEvent }, ...prev]);
-    
-    let knowledgeGain = 0;
-    let activitySpike = 0;
-    switch(alert.severity) {
-        case AlertSeverity.CRITICAL: knowledgeGain = 0.8; activitySpike = 10; break;
-        case AlertSeverity.HIGH: knowledgeGain = 0.5; activitySpike = 7; break;
-        case AlertSeverity.MEDIUM: knowledgeGain = 0.2; activitySpike = 4; break;
-    }
-    // High-impact detections give more knowledge
-    if(alert.title === 'In-Memory Threat Detected') knowledgeGain *= 1.5;
 
-    updateServerKnowledge(knowledgeGain, `${alert.severity} Alert: ${alert.title}`);
-    setCorrelationActivity(prev => [...prev.slice(1), activitySpike]);
-
-    // Contextual Threat Tracking
-    if (alert.raw_data?.context) {
-        const { industry, region } = alert.raw_data.context;
-        const key = `${industry}|${region}`;
-        setContextualThreatTracker(prev => {
-            const newTracker = { ...prev };
-            if (!newTracker[key]) {
-                newTracker[key] = { count: 0, threats: new Set() };
+    const processAlert = useCallback(async (alert: Alert) => {
+        const sanitized_data: Record<string, any> = {};
+        for (const [key, value] of Object.entries(alert.raw_data || {})) {
+            if (key === 'username') {
+                sanitized_data['user_hash'] = await sha256(String(value));
+            } else if (key === 'password_strength' && value === 'weak') {
+                sanitized_data[key] = value;
+            } else if (key === 'signature') {
+                 sanitized_data['signature_hash'] = await sha256(String(value));
+            } else if (!['device', 'context'].includes(key)) {
+                sanitized_data[key] = value;
             }
-            newTracker[key].count += 1;
-            newTracker[key].threats.add(alert.title);
-            return newTracker;
-        });
-    }
+        }
 
-  }, [updateServerKnowledge]);
-
-  useEffect(() => {
-    // Main simulation loop
-    intervalRef.current = window.setInterval(() => {
-      // 1. Maybe a new alert comes in
-      if (Math.random() < 0.6) {
-        const sample = sampleAlerts[Math.floor(Math.random() * sampleAlerts.length)];
-        const newAlert: Alert = {
-          ...sample,
-          id: `alert-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString(),
+        const aggregatedEvent: AggregatedEvent = {
+            title: alert.title,
+            severity: alert.severity,
+            count: 1,
+            sanitized_data,
+            first_seen: alert.timestamp,
+            last_seen: alert.timestamp,
+            context: alert.raw_data?.context,
         };
-        setAlerts(prev => [newAlert, ...prev.slice(0, 49)]);
-        processAlert(newAlert);
-      }
 
-      // 2. Server learns from external sources
-      if (Math.random() < 0.2) {
-        const intelPool = [...externalIntelSources, ...vulnerabilityIntelSources];
-        const intel = intelPool[Math.floor(Math.random() * intelPool.length)];
-        const newEvent: ServerEvent = {
-          id: `se-${Date.now()}`,
-          type: 'LEARNING_UPDATE',
-          timestamp: new Date().toLocaleTimeString(),
-          payload: intel,
+        const serverEvent: ServerEvent = {
+            id: `se-${Date.now()}`,
+            type: 'AGGREGATED_EVENT',
+            timestamp: alert.timestamp,
+            payload: aggregatedEvent,
         };
-        setServerEvents(prev => [newEvent, ...prev]);
-        updateServerKnowledge(0.3, `Intel: ${intel.source}`);
-        setCorrelationActivity(prev => [...prev.slice(1), 5]); // Intel ingestion causes activity
-      }
-      
-      // 3. Server maybe pushes a directive
-      if (Math.random() < 0.1) {
-          const newDirective: DirectivePush = { title: 'New Behavioral Rule Deployed', description: 'Blocking anomalous PowerShell child processes.', target: 'All Agents' };
-          setServerEvents(prev => [{ id: `se-${Date.now()}`, type: 'DIRECTIVE_PUSH', timestamp: new Date().toLocaleTimeString(), payload: newDirective }, ...prev]);
-      }
-      
-      // 4. Server syncs knowledge if it has learned enough
-      if (serverKnowledgeLevel > agentKnowledgeLevel + 5) {
-          const newSync: KnowledgeSync = { description: 'Synchronizing latest threat models and IOCs.', version: `v1.${Math.floor(serverKnowledgeLevel)}` };
-          setServerEvents(prev => [{ id: `se-${Date.now()}`, type: 'KNOWLEDGE_SYNC', timestamp: new Date().toLocaleTimeString(), payload: newSync }, ...prev]);
-          setAgentKnowledgeLevel(prev => Math.min(100, prev + 5));
-      }
+        setServerEvents(prev => [...prev, serverEvent]);
 
-      // 5. Check for contextual threat patterns
-      Object.entries(contextualThreatTracker).forEach(([key, value]) => {
-          if (value.count > 1) { // Threshold for proactive alert
-              const [industry, region] = key.split('|');
-              const newAlert: ProactiveAlertPush = {
-                  title: 'Proactive Threat Alert',
-                  threat_summary: `Detected correlated threat activity (${Array.from(value.threats).join(', ')}) targeting the ${industry} sector in ${region}.`,
-                  target_context: `${industry} Sector - ${region}`
-              };
-              setServerEvents(prev => [{ id: `se-${Date.now()}`, type: 'PROACTIVE_ALERT_PUSH', timestamp: new Date().toLocaleTimeString(), payload: newAlert }, ...prev]);
-              setContextualThreatTracker(prev => ({...prev, [key]: { count: 0, threats: new Set() }})); // Reset tracker
-          }
-      });
-      
-      // Natural decay of activity
-      setCorrelationActivity(prev => [...prev.slice(1), Math.max(0, prev[prev.length - 1] * 0.8 - 0.1)]);
+        // Server Learning Logic
+        let knowledgeGain = 0;
+        let activitySpike = 0;
+        if (alert.severity === AlertSeverity.CRITICAL) { 
+            knowledgeGain += 0.8;
+            activitySpike += 15;
+        }
+        if (alert.severity === AlertSeverity.HIGH) { 
+            knowledgeGain += 0.4;
+            activitySpike += 8;
+        }
+        if (alert.severity === AlertSeverity.MEDIUM) { 
+            knowledgeGain += 0.2;
+            activitySpike += 4;
+        }
+        
+        if (knowledgeGain > 0) {
+            logKnowledgeContribution(`${alert.severity} Alert: ${alert.title}`, knowledgeGain);
+        }
 
-    }, 2500);
+        if (alert.raw_data?.context) {
+            const contextKey = `${alert.raw_data.context.industry}|${alert.raw_data.context.region}`;
+            setContextualThreatTracker(prev => {
+                const newTracker = {...prev};
+                const current = newTracker[contextKey] || { count: 0, titles: new Set() };
+                current.count++;
+                current.titles.add(alert.title);
+                newTracker[contextKey] = current;
+                return newTracker;
+            });
+        }
+        
+        // Automated Remediation for critical threats
+        if (alert.severity === AlertSeverity.CRITICAL) {
+             const remediationEvent: ServerEvent = {
+                id: `se-${Date.now()}-remediate`,
+                type: 'AUTOMATED_REMEDIATION',
+                timestamp: alert.timestamp,
+                payload: {
+                    threat_name: alert.title,
+                    actions_taken: ['Isolate Host', 'Terminate Process Tree'],
+                    target_host: alert.raw_data?.device.hostname || 'Unknown',
+                } as AutomatedRemediation
+            };
+            setServerEvents(prev => [...prev, remediationEvent]);
+            logKnowledgeContribution(`Remediation for: ${alert.title}`, 0.5);
+            activitySpike += 10;
+        }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+        setCorrelationActivity(prev => [...prev.slice(1), activitySpike]);
+
+    }, []);
+
+    const pushKnowledgeSync = useCallback(() => {
+        const syncEvent: ServerEvent = {
+            id: `se-${Date.now()}-sync`,
+            type: 'KNOWLEDGE_SYNC',
+            timestamp: new Date().toLocaleTimeString([]),
+            payload: {
+                description: 'Pushed latest threat intelligence models and IOCs to fleet.',
+                version: `v${(agentKnowledgeLevel + 0.1).toFixed(2)}`
+            } as KnowledgeSync
+        };
+        setServerEvents(prev => [...prev, syncEvent]);
+        setAgentKnowledgeLevel(prev => Math.min(100, prev + (Math.random() * 0.5 + 0.1)));
+    }, [agentKnowledgeLevel]);
+
+
+    useEffect(() => {
+        intervalRef.current = window.setInterval(() => {
+            alertCounter++;
+            const now = new Date();
+
+            // Add new agent alert
+            if (alertCounter % 2 === 0 && sampleAlerts.length > 0) {
+                const sample = sampleAlerts[Math.floor(Math.random() * sampleAlerts.length)];
+                const newAlert: Alert = {
+                    ...sample,
+                    id: `alert-${now.getTime()}`,
+                    timestamp: now.toLocaleTimeString([]),
+                };
+                setAlerts(prev => [newAlert, ...prev].slice(0, 50));
+                processAlert(newAlert);
+            }
+            
+            // Add new server learning event
+            if (alertCounter % 7 === 0) {
+                // FIX: Explicitly type `source` as `LearningUpdate` to ensure the `details` property can be accessed safely.
+                const source: LearningUpdate = Math.random() > 0.3 ? externalIntelSources[Math.floor(Math.random() * externalIntelSources.length)] : vulnerabilityIntelSources[Math.floor(Math.random() * vulnerabilityIntelSources.length)];
+                const learningEvent: ServerEvent = {
+                    id: `se-${now.getTime()}`,
+                    type: 'LEARNING_UPDATE',
+                    timestamp: now.toLocaleTimeString([]),
+                    payload: source as LearningUpdate,
+                };
+                setServerEvents(prev => [...prev, learningEvent]);
+                const intelGain = source.details ? 1.0 : 0.5;
+                logKnowledgeContribution(`Intel: ${source.source}`, intelGain);
+                setCorrelationActivity(prev => [...prev.slice(1), 12]); // Spike for intel
+            }
+
+            // Check for proactive alerts
+            Object.entries(contextualThreatTracker).forEach(([key, data]) => {
+                if (data.count > 1) { // If more than 1 hit in the same context
+                    const [industry, region] = key.split('|');
+                     const proactiveAlert: ServerEvent = {
+                        id: `se-${now.getTime()}-proactive`,
+                        type: 'PROACTIVE_ALERT_PUSH',
+                        timestamp: now.toLocaleTimeString([]),
+                        payload: {
+                            title: `Heightened Threat Activity Detected`,
+                            threat_summary: `Correlated multiple threats targeting the ${industry} industry in ${region}. Threats include: ${Array.from(data.titles).join(', ')}.`,
+                            target_context: `${industry} Sector in ${region}`
+                        } as ProactiveAlertPush
+                    };
+                    setServerEvents(prev => [...prev, proactiveAlert]);
+                    logKnowledgeContribution(`Proactive Alert for ${industry}`, 1.2);
+                    setContextualThreatTracker(prev => {
+                        const newTracker = {...prev};
+                        delete newTracker[key]; // Reset after firing
+                        return newTracker;
+                    });
+                }
+            });
+            
+             // Occasionally push knowledge syncs
+            if (knowledgeLevel > agentKnowledgeLevel * 1.5 && Math.random() > 0.6) {
+                pushKnowledgeSync();
+            }
+
+        }, 3000);
+
+        return () => {
+            if (intervalRef.current) {
+                window.clearInterval(intervalRef.current);
+            }
+        };
+    }, [processAlert, knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker, pushKnowledgeSync]);
+
+
+    const handleSend = async (prompt: string) => {
+        setIsLoading(true);
+        setChatHistory(prev => [...prev, { role: MessageRole.USER, content: prompt }]);
+        
+        try {
+            const stream = await getChatResponse(prompt);
+            let modelResponse = '';
+            setChatHistory(prev => [...prev, { role: MessageRole.MODEL, content: '' }]);
+
+            for await (const chunk of stream) {
+                modelResponse += chunk.text;
+                setChatHistory(prev => {
+                    const newHistory = [...prev];
+                    newHistory[newHistory.length - 1].content = modelResponse;
+                    return newHistory;
+                });
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "An unknown error occurred.";
+            setChatHistory(prev => [...prev, { role: MessageRole.ERROR, content: message }]);
+        } finally {
+            setIsLoading(false);
+        }
     };
-  }, [processAlert, agentKnowledgeLevel, serverKnowledgeLevel, contextualThreatTracker, updateServerKnowledge]);
-
-  const handleSend = async (prompt: string) => {
-    setIsLoading(true);
-    setChatHistory((prev) => [...prev, { role: MessageRole.USER, content: prompt }]);
-
-    try {
-      const stream = await getChatResponse(prompt);
-      let fullResponse = "";
-      setChatHistory((prev) => [...prev, { role: MessageRole.MODEL, content: "" }]);
-
-      for await (const chunk of stream) {
-        // FIX: Per @google/genai guidelines, the response text is accessed via the .text property, not the .text() method.
-        fullResponse += chunk.text;
-        setChatHistory((prev) => {
-          const newHistory = [...prev];
-          newHistory[newHistory.length - 1].content = fullResponse;
-          return newHistory;
-        });
-      }
-    } catch (error) {
-      setChatHistory((prev) => [...prev, { role: MessageRole.ERROR, content: (error as Error).message }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleSelectItem = (item: AllEventTypes) => {
-    setSelectedDetailItem(item);
-  };
-  
-  const handleReturnToDashboard = () => {
-    setSelectedDetailItem(null);
-  };
-
-  return (
-    <div className="flex flex-col h-screen text-gray-200 font-sans bg-slate-900 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
-      <Header />
-      <main className="flex flex-1 p-4 gap-4 overflow-hidden">
-        <AlertFeed alerts={alerts} onSelectItem={handleSelectItem} />
-        
-        <div className="flex-1 flex flex-col bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-lg overflow-hidden">
-            {selectedDetailItem ? (
-                <DetailView item={selectedDetailItem} onReturn={handleReturnToDashboard} />
-            ) : (
-                <DashboardView 
-                    serverKnowledgeLevel={serverKnowledgeLevel}
-                    agentKnowledgeLevel={agentKnowledgeLevel}
-                    serverEvents={serverEvents}
-                    correlationActivity={correlationActivity}
-                    onDeployClick={() => setIsDeploymentModalOpen(true)}
-                    onSettingsClick={() => setIsSettingsModalOpen(true)}
-                    onKnowledgeMeterClick={() => setIsAnalyticsModalOpen(true)}
+    
+    return (
+        <div className="h-screen w-screen flex flex-col bg-slate-900 text-gray-200 font-sans">
+            <Header />
+            <main className="flex-1 flex overflow-hidden">
+                <NavigationSidebar 
+                    activeView={'Dashboard'} 
+                    onViewChange={() => {}} 
                 />
-            )}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+                        <AlertFeed alerts={alerts} onSelectItem={setSelectedDetailItem} />
+                        <div className="flex-1 flex flex-col overflow-hidden bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-lg">
+                           {selectedDetailItem ? (
+                                <DetailView item={selectedDetailItem} onReturn={() => setSelectedDetailItem(null)} />
+                           ) : (
+                                <DashboardView 
+                                    serverKnowledgeLevel={knowledgeLevel}
+                                    agentKnowledgeLevel={agentKnowledgeLevel}
+                                    serverEvents={serverEvents}
+                                    correlationActivity={correlationActivity}
+                                    onDeployClick={() => setDeploymentModalOpen(true)}
+                                    onSettingsClick={() => setSettingsModalOpen(true)}
+                                    onKnowledgeMeterClick={() => setAnalyticsModalOpen(true)}
+                                />
+                           )}
+                        </div>
+                        <ServerBrainFeed events={serverEvents} onSelectItem={setSelectedDetailItem} />
+                    </div>
+                     <ChatPanel 
+                        chatHistory={chatHistory}
+                        isLoading={isLoading}
+                        onSend={handleSend}
+                     />
+                </div>
+            </main>
+            <DeploymentModal isOpen={isDeploymentModalOpen} onClose={() => setDeploymentModalOpen(false)} />
+            <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
+            <LearningAnalyticsModal isOpen={isAnalyticsModalOpen} onClose={() => setAnalyticsModalOpen(false)} log={learningLog} />
         </div>
-        
-        <ServerBrainFeed events={serverEvents} onSelectItem={handleSelectItem} />
-      </main>
-      
-       <footer className="shrink-0 p-4 border-t border-slate-700/50 bg-slate-900/75 backdrop-blur-lg">
-         <div className="flex-1 flex flex-col gap-4">
-            <ResponseDisplay chatHistory={chatHistory} isLoading={isLoading} />
-            <PromptInput onSend={handleSend} isLoading={isLoading} />
-        </div>
-      </footer>
-      
-      <DeploymentModal isOpen={isDeploymentModalOpen} onClose={() => setIsDeploymentModalOpen(false)} />
-      <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
-      <LearningAnalyticsModal 
-        isOpen={isAnalyticsModalOpen} 
-        onClose={() => setIsAnalyticsModalOpen(false)} 
-        log={learningLog} 
-      />
-
-    </div>
-  );
+    );
 };
 
 export default App;
