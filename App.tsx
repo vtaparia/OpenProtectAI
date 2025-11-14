@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChatMessage, MessageRole, Alert, AlertSeverity, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes } from './types';
 import { getChatResponse } from './services/geminiService';
@@ -204,7 +202,9 @@ const App: React.FC = () => {
     const [isDeploymentModalOpen, setIsDeploymentModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [selectedDetailItem, setSelectedDetailItem] = useState<AllEventTypes | null>(null);
-    const intervalRef = useRef<number | undefined>();
+    const [correlationActivity, setCorrelationActivity] = useState<number[]>(Array(20).fill(0));
+    // FIX: Explicitly initialize useRef with `undefined`. Older versions of React types may not support an empty `useRef()` call, which could lead to a "Expected 1 arguments, but got 0" error during compilation.
+    const intervalRef = useRef<number | undefined>(undefined);
 
     const pushServerEvent = useCallback((type: ServerEvent['type'], payload: ServerEvent['payload']) => {
         setServerEvents(prev => [{
@@ -219,13 +219,10 @@ const App: React.FC = () => {
         const sanitized_data: Record<string, any> = {};
         for (const [key, value] of Object.entries(alert.raw_data ?? {})) {
             if (key === 'username') {
-                // FIX: Ensure value is a string before hashing to prevent potential errors.
                 sanitized_data['user_hash'] = await sha256(String(value));
             } else if (key === 'password_strength') {
                 sanitized_data[key] = value;
             } else if (key === 'signature') {
-                // FIX: Pass the 'value' to sha256. The function was being called without its required argument.
-                // FIX: The sha256 function requires a string argument, but was called with none.
                 sanitized_data['signature_hash'] = await sha256(String(value));
             } else if (!['device', 'context'].includes(key)) {
                 sanitized_data[key] = value;
@@ -244,14 +241,21 @@ const App: React.FC = () => {
         pushServerEvent('AGGREGATED_EVENT', aggregatedEvent);
 
         let knowledgeGain = 0;
+        let activityScore = 0;
         switch(alert.severity) {
-            case AlertSeverity.CRITICAL: knowledgeGain = 0.8; break;
-            case AlertSeverity.HIGH: knowledgeGain = 0.5; break;
-            case AlertSeverity.MEDIUM: knowledgeGain = 0.2; break;
+            case AlertSeverity.CRITICAL: knowledgeGain = 0.8; activityScore = 10; break;
+            case AlertSeverity.HIGH: knowledgeGain = 0.5; activityScore = 6; break;
+            case AlertSeverity.MEDIUM: knowledgeGain = 0.2; activityScore = 3; break;
+            default: activityScore = 1;
         }
-        if (alert.title === 'In-Memory Threat Detected') knowledgeGain *= 2;
+        if (alert.title === 'In-Memory Threat Detected') {
+            knowledgeGain *= 2;
+            activityScore *= 2;
+        }
         
         setKnowledgeLevel(prev => Math.min(100, prev + knowledgeGain));
+        setCorrelationActivity(prev => [...prev.slice(1), activityScore]);
+
 
         if (alert.raw_data?.context) {
             const { industry, region } = alert.raw_data.context;
@@ -312,6 +316,9 @@ const App: React.FC = () => {
                 const intel = externalIntelSources[Math.floor(Math.random() * externalIntelSources.length)];
                 pushServerEvent('LEARNING_UPDATE', intel);
                 setKnowledgeLevel(prev => Math.min(100, prev + 0.5));
+                setCorrelationActivity(prev => [...prev.slice(1), 5]); // Intel ingestion also causes activity
+            } else {
+                 setCorrelationActivity(prev => [...prev.slice(1), prev[prev.length - 1] * 0.5]); // Decay activity
             }
 
             if (knowledgeLevel > 30 && Math.random() > 0.85) {
@@ -338,4 +345,73 @@ const App: React.FC = () => {
         try {
             const stream = await getChatResponse(prompt);
             let fullResponse = '';
-            setChatHistory(prev => [...prev, { role: MessageRole.MODEL, content: ''
+            setChatHistory(prev => [...prev, { role: MessageRole.MODEL, content: '' }]);
+
+            for await (const chunk of stream) {
+                fullResponse += chunk.text;
+                setChatHistory(prev => {
+                    const newHistory = [...prev];
+                    newHistory[newHistory.length - 1].content = fullResponse;
+                    return newHistory;
+                });
+            }
+        } catch (error) {
+            setChatHistory(prev => [...prev, { role: MessageRole.ERROR, content: (error as Error).message }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <>
+            <div className="flex flex-col h-screen font-sans text-gray-200">
+                <Header />
+                <main className="flex-1 flex gap-4 p-4 overflow-hidden">
+                    <AlertFeed 
+                        alerts={alerts} 
+                        onSelectItem={setSelectedDetailItem}
+                    />
+                    
+                    <div className="flex-1 flex flex-col overflow-hidden bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-lg">
+                        {selectedDetailItem ? (
+                            <DetailView 
+                                item={selectedDetailItem}
+                                onReturn={() => setSelectedDetailItem(null)}
+                            />
+                        ) : (
+                             <DashboardView
+                                serverKnowledgeLevel={knowledgeLevel}
+                                agentKnowledgeLevel={agentKnowledgeLevel}
+                                serverEvents={serverEvents}
+                                onDeployClick={() => setIsDeploymentModalOpen(true)}
+                                onSettingsClick={() => setIsSettingsModalOpen(true)}
+                                correlationActivity={correlationActivity}
+                            />
+                        )}
+                    </div>
+
+                    <ServerBrainFeed 
+                        events={serverEvents} 
+                        onSelectItem={setSelectedDetailItem}
+                    />
+                </main>
+                <div className="p-4 pt-0">
+                    <div className="bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-lg p-4 max-w-4xl mx-auto">
+                        <ResponseDisplay chatHistory={chatHistory} isLoading={isLoading} />
+                        <PromptInput onSend={handleSend} isLoading={isLoading} />
+                    </div>
+                </div>
+            </div>
+            <DeploymentModal 
+                isOpen={isDeploymentModalOpen} 
+                onClose={() => setIsDeploymentModalOpen(false)} 
+            />
+            <SettingsModal 
+                isOpen={isSettingsModalOpen} 
+                onClose={() => setIsSettingsModalOpen(false)} 
+            />
+        </>
+    );
+};
+
+export default App;

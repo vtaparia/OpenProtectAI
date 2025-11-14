@@ -6,11 +6,14 @@ import ThreatHeatmap from './ThreatHeatmap';
 import { ServerEvent } from '../types';
 import { DeployIcon } from './icons/DeployIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
+import CorrelationActivityGraph from './CorrelationActivityGraph';
+import { GlobeIcon } from './icons/GlobeIcon';
 
 interface DashboardViewProps {
   serverKnowledgeLevel: number;
   agentKnowledgeLevel: number;
   serverEvents: ServerEvent[];
+  correlationActivity: number[];
   onDeployClick: () => void;
   onSettingsClick: () => void;
 }
@@ -19,6 +22,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   serverKnowledgeLevel,
   agentKnowledgeLevel,
   serverEvents,
+  correlationActivity,
   onDeployClick,
   onSettingsClick,
 }) => {
@@ -45,7 +49,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
             </div>
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
                     <ServerKnowledgeMeter level={serverKnowledgeLevel} />
@@ -54,8 +58,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     <AgentKnowledgeMeter level={agentKnowledgeLevel} />
                 </div>
             </div>
-            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
-                <ThreatHeatmap events={serverEvents} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                 <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                    <h3 className="text-base font-bold text-gray-300 mb-3 flex items-center gap-2">
+                        <GlobeIcon />
+                        Threat Landscape Overview
+                    </h3>
+                    <ThreatHeatmap events={serverEvents} />
+                </div>
+                 <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                    <CorrelationActivityGraph activityData={correlationActivity} />
+                </div>
             </div>
              <div className="text-center text-gray-500 pt-8">
                 <p>Welcome to the Cyber Architect AI Console.</p>
