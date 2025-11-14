@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -37,12 +38,17 @@ const CodeBlock: React.FC<{ node: any, inline?: boolean, className?: string, chi
 };
 
 const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ chatHistory, isLoading }) => {
+  const endOfMessagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, isLoading]);
   
   const markdownComponents = {
     code: CodeBlock,
-    h1: (props: any) => <h1 className="text-3xl font-bold mt-6 mb-4 border-b border-slate-600 pb-2" {...props} />,
-    h2: (props: any) => <h2 className="text-2xl font-semibold mt-5 mb-3 border-b border-slate-700 pb-2" {...props} />,
-    h3: (props: any) => <h3 className="text-xl font-semibold mt-4 mb-2" {...props} />,
+    h1: (props: any) => <h1 className="text-2xl font-bold mt-5 mb-3 border-b border-slate-600 pb-2" {...props} />,
+    h2: (props: any) => <h2 className="text-xl font-semibold mt-4 mb-2 border-b border-slate-700 pb-1" {...props} />,
+    h3: (props: any) => <h3 className="text-lg font-semibold mt-3 mb-1" {...props} />,
     p: (props: any) => <p className="mb-4 leading-relaxed" {...props} />,
     ul: (props: any) => <ul className="list-disc list-inside mb-4 ml-4 space-y-1" {...props} />,
     ol: (props: any) => <ol className="list-decimal list-inside mb-4 ml-4 space-y-1" {...props} />,
@@ -55,19 +61,18 @@ const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ chatHistory, isLoadin
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      <div className="max-w-4xl mx-auto w-full">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
         {chatHistory.map((msg, index) => (
           <div key={index} className={`flex items-start gap-4 p-4 my-2 rounded-lg ${msg.role === MessageRole.USER ? 'bg-slate-700/50' : 'bg-transparent'}`}>
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.role === MessageRole.USER ? 'bg-cyan-600' : 'bg-slate-700'}`}>
                   {msg.role === MessageRole.USER ? <UserIcon /> : <RobotIcon />}
               </div>
-              <div className="flex-1 pt-1">
+              <div className="flex-1 pt-1 min-w-0">
                   <strong className="text-sm font-semibold text-gray-400">{msg.role === MessageRole.USER ? 'You' : 'Cyber Architect AI'}</strong>
                   {msg.role === MessageRole.ERROR ? (
                       <p className="text-red-400 mt-1">{msg.content}</p>
                   ) : (
-                      <div className="prose prose-invert max-w-none prose-pre:bg-slate-800 prose-pre:p-4 prose-pre:rounded-md mt-1">
+                      <div className="prose prose-invert max-w-none prose-pre:bg-slate-800 prose-pre:p-4 prose-pre:rounded-md mt-1 text-gray-300">
                         <ReactMarkdown components={markdownComponents}>
                           {msg.content}
                         </ReactMarkdown>
@@ -91,7 +96,7 @@ const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ chatHistory, isLoadin
               </div>
           </div>
         )}
-      </div>
+        <div ref={endOfMessagesRef} />
     </div>
   );
 };

@@ -1,5 +1,5 @@
+
 import React, { useMemo } from 'react';
-// FIX: Import `AggregatedEvent` to allow for a type assertion on the event payload.
 import { ServerEvent, AggregatedEvent } from '../types';
 import { GlobeIcon } from './icons/GlobeIcon';
 import { IndustryIcon } from './icons/IndustryIcon';
@@ -15,7 +15,7 @@ const getTopN = (counts: Record<string, number>, n: number) => {
     return top.map(([name, count]) => ({
         name,
         count,
-        percentage: (count / max) * 100,
+        percentage: Math.max(5, (count / max) * 100), // Ensure a minimum width for visibility
     }));
 };
 
@@ -27,18 +27,18 @@ const BarChart: React.FC<{ title: string; data: { name: string; count: number; p
         </h4>
         <div className="space-y-1.5 text-xs">
             {data.length > 0 ? data.map(({ name, count, percentage }) => (
-                <div key={name} className="flex items-center gap-2">
-                    <span className="w-1/3 truncate text-gray-300" title={name}>{name}</span>
-                    <div className="w-2/3 bg-gray-700 rounded-full h-3">
+                <div key={name} className="flex items-center gap-2" title={`${name} (${count} events)`}>
+                    <span className="w-1/3 truncate text-gray-300">{name}</span>
+                    <div className="w-2/3 bg-gray-700/50 rounded-full h-4">
                         <div 
-                            className={`${barColor} h-3 rounded-full flex items-center justify-end pr-2 text-white font-bold`} 
+                            className={`${barColor} h-4 rounded-full flex items-center justify-end px-2 text-white font-bold text-[10px]`} 
                             style={{ width: `${percentage}%` }}
                         >
-                           <span style={{ fontSize: '10px' }}>{count}</span>
+                           {count}
                         </div>
                     </div>
                 </div>
-            )) : <p className="text-gray-500 text-center text-xs">No data available.</p>}
+            )) : <p className="text-gray-500 text-center text-xs py-2">No data available.</p>}
         </div>
     </div>
 );
@@ -47,16 +47,18 @@ const ThreatHeatmap: React.FC<ThreatHeatmapProps> = ({ events }) => {
   const stats = useMemo(() => {
     const industryCounts: Record<string, number> = {};
     const regionCounts: Record<string, number> = {};
+    const countryCounts: Record<string, number> = {};
+    const continentCounts: Record<string, number> = {};
 
     events.forEach(event => {
-      // FIX: Check event type before accessing payload properties to satisfy TypeScript's type narrowing.
-      // A type assertion is used because ServerEvent is not defined as a discriminated union.
       if (event.type === 'AGGREGATED_EVENT') {
         const payload = event.payload as AggregatedEvent;
         if (payload.context) {
-          const { industry, region } = payload.context;
+          const { industry, region, country, continent } = payload.context;
           industryCounts[industry] = (industryCounts[industry] || 0) + 1;
           regionCounts[region] = (regionCounts[region] || 0) + 1;
+          countryCounts[country] = (countryCounts[country] || 0) + 1;
+          continentCounts[continent] = (continentCounts[continent] || 0) + 1;
         }
       }
     });
@@ -64,6 +66,8 @@ const ThreatHeatmap: React.FC<ThreatHeatmapProps> = ({ events }) => {
     return {
       topIndustries: getTopN(industryCounts, 3),
       topRegions: getTopN(regionCounts, 3),
+      topCountries: getTopN(countryCounts, 3),
+      topContinents: getTopN(continentCounts, 3),
     };
   }, [events]);
 
@@ -75,11 +79,23 @@ const ThreatHeatmap: React.FC<ThreatHeatmapProps> = ({ events }) => {
             icon={<IndustryIcon />}
             barColor="bg-gradient-to-r from-sky-600 to-sky-400"
         />
+         <BarChart 
+            title="Top Impacted Continents"
+            data={stats.topContinents}
+            icon={<GlobeIcon />}
+            barColor="bg-gradient-to-r from-purple-600 to-purple-400"
+        />
         <BarChart 
             title="Top Impacted Regions"
             data={stats.topRegions}
             icon={<GlobeIcon />}
             barColor="bg-gradient-to-r from-amber-600 to-amber-400"
+        />
+        <BarChart 
+            title="Top Impacted Countries"
+            data={stats.topCountries}
+            icon={<GlobeIcon />}
+            barColor="bg-gradient-to-r from-rose-600 to-rose-400"
         />
     </div>
   );

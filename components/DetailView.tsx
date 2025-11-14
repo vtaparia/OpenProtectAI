@@ -1,12 +1,6 @@
 
 import React from 'react';
 import { AllEventTypes, Alert, ServerEvent, AggregatedEvent, LearningUpdate, DirectivePush, KnowledgeSync, ProactiveAlertPush, VulnerabilityDetails } from '../types';
-import AlertItem from './AlertItem';
-import LWServerEventItem from './LWServerEventItem';
-import LearningUpdateItem from './LearningUpdateItem';
-import DirectivePushItem from './DirectivePushItem';
-import KnowledgeSyncItem from './KnowledgeSyncItem';
-import ProactiveAlertItem from './ProactiveAlertItem';
 import PayloadDetailsView from './PayloadDetailsView';
 
 interface DetailViewProps {
@@ -14,16 +8,15 @@ interface DetailViewProps {
   onReturn: () => void;
 }
 
-// FIX: Modified DetailRow to accept children, making it more flexible.
 const DetailRow: React.FC<{ label: string; value?: React.ReactNode; children?: React.ReactNode }> = ({ label, value, children }) => (
     <div className="grid grid-cols-3 gap-2 py-1">
         <span className="text-gray-400 font-semibold col-span-1">{label}:</span>
-        <span className="text-gray-200 col-span-2 break-all">{value ?? children}</span>
+        <span className="text-gray-200 col-span-2 break-words">{value ?? children}</span>
     </div>
 );
 
 const VulnerabilityDetailsDisplay: React.FC<{ details: VulnerabilityDetails }> = ({ details }) => (
-    <div className="text-sm space-y-1 mt-2">
+    <div className="text-sm space-y-1 mt-2 font-mono">
         <DetailRow label="CVE ID" value={details.cve_id} />
         <DetailRow label="CVSS Score" value={details.cvss_score} />
         <DetailRow label="Software" value={details.affected_software} />
@@ -59,7 +52,7 @@ const DetailView: React.FC<DetailViewProps> = ({ item, onReturn }) => {
                         <div>
                              <h3 className="text-lg font-bold text-gray-200 mb-2">{payload.title}</h3>
                              {payload.context && (
-                                <div className='mb-4 text-sm'>
+                                <div className='mb-4 text-sm font-mono'>
                                     <DetailRow label="Industry" value={payload.context.industry} />
                                     <DetailRow label="Region" value={`${payload.context.region}, ${payload.context.country}`} />
                                 </div>
