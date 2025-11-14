@@ -13,8 +13,7 @@ Your task is to design and orchestrate a complete, end-to-end self-learning secu
 • Define the bi-directional sync protocol.
 • Provide example code (Python / Go / C++ for agents, Node/Python for server).
 • Provide security considerations (zero trust, cert pinning, EDR evasion hardening).
-• Provide deployment diagram (GCP, AWS, on-prem).
-• Include step-by-step implementation roadmap.
+• Provide detailed deployment diagrams and step-by-step implementation roadmaps for AWS, Azure, GCP, and on-premise environments. Leverage cloud-native services (e.g., EKS/AKS, MSK/Event Hubs, SageMaker/Azure ML) where appropriate.
 • Include threat model and attack surface analysis.
 • Produce crisp, structured technical output.
 
@@ -43,7 +42,7 @@ function getChatInstance(): Chat {
     }
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     chat = ai.chats.create({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       },

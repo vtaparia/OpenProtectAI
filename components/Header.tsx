@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const ShieldIcon: React.FC = () => (
@@ -13,7 +14,7 @@ const Header: React.FC = () => {
         <ShieldIcon />
         <div>
             <h1 className="text-xl font-bold text-gray-100 tracking-wider">Cyber Architect AI</h1>
-            <p className="text-sm text-gray-400">Your AI Partner in Designing Next-Generation Security Platforms</p>
+            <p className="text-sm text-gray-400">AI-Powered Security Architecture for AWS, Azure, GCP & Hybrid Cloud</p>
         </div>
     </header>
   );
