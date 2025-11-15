@@ -126,6 +126,46 @@ paths:
         '401':
           description: "Unauthorized. The user does not have permission to assign cases."
 
+  /v1/cases/{caseId}/resolve:
+    patch:
+      tags:
+        - Case Management
+      summary: "Resolve a case"
+      description: "Marks a case as resolved and adds final investigation notes."
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          description: The unique identifier of the case.
+          schema:
+            type: string
+            example: "CASE-123456"
+      requestBody:
+        description: The resolution notes for the case.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution_notes:
+                  type: string
+                  description: "A summary of actions taken and the final resolution."
+                  example: "Threat contained by isolating host. Host was re-imaged from golden image. No evidence of lateral movement found."
+              required:
+                - resolution_notes
+      responses:
+        '200':
+          description: "OK. The case has been successfully resolved."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '404':
+          description: "Not Found. The specified caseId does not exist."
+        '401':
+          description: "Unauthorized."
+
   /v1/cases/resolved:
     get:
       tags:

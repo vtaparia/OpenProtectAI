@@ -23,7 +23,7 @@ This project demonstrates a sophisticated "single pane of glass" UI for monitori
 ### 3. Incident Response & Case Management
 - **One-Click Case Creation:** Analysts can create an investigation "Case" from any high or critical severity alert directly within the Agent Fleet view. This assigns a unique Case ID for tracking.
 - **Case Assignment Workflow:** New cases can be assigned to specific security analysts. Assigned cases automatically transition to an "In Progress" state, and the assignee is clearly displayed on the alert.
-- **Case Resolution:** Analysts can resolve "In Progress" cases, adding mandatory resolution notes to close out the investigation.
+- **Case Resolution:** Analysts can resolve "In Progress" cases, adding mandatory resolution notes to close out the investigation and move the incident to the audit trail.
 - **Incident Review & Audit Trail:** A new "Incident Review" view provides a dedicated workspace for SOC managers to review, search, and audit all resolved cases, providing a complete historical record for compliance and post-mortem analysis.
 - **Open Cases Dashboard:** The main dashboard includes a real-time summary of open cases by status (New / Unassigned, In Progress, Resolved), providing an at-a-glance overview of the SOC's active workload.
 
