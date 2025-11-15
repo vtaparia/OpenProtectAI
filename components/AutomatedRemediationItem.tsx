@@ -27,7 +27,8 @@ const AutomatedRemediationItem: React.FC<AutomatedRemediationItemProps> = ({ eve
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300">
               Host: {payload.target_host}
             </span>
-            <span className="text-xs text-gray-500">{event.timestamp}</span>
+            {/* Provided a locale to toLocaleTimeString for consistent time formatting. */}
+            <span className="text-xs text-gray-500">{new Date(event.timestamp).toLocaleTimeString('en-US')}</span>
           </div>
         </div>
       </div>

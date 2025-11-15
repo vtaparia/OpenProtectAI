@@ -22,7 +22,10 @@ This project demonstrates a sophisticated "single pane of glass" UI for monitori
 
 ### 3. Incident Response & Case Management
 - **One-Click Case Creation:** Analysts can create an investigation "Case" from any high or critical severity alert directly within the Agent Fleet view. This assigns a unique Case ID for tracking.
-- **Open Cases Dashboard:** The main dashboard includes a real-time summary of open cases by status (New, In Progress, Resolved), providing an at-a-glance overview of the SOC's active workload.
+- **Case Assignment Workflow:** New cases can be assigned to specific security analysts. Assigned cases automatically transition to an "In Progress" state, and the assignee is clearly displayed on the alert.
+- **Case Resolution:** Analysts can resolve "In Progress" cases, adding mandatory resolution notes to close out the investigation.
+- **Incident Review & Audit Trail:** A new "Incident Review" view provides a dedicated workspace for SOC managers to review, search, and audit all resolved cases, providing a complete historical record for compliance and post-mortem analysis.
+- **Open Cases Dashboard:** The main dashboard includes a real-time summary of open cases by status (New / Unassigned, In Progress, Resolved), providing an at-a-glance overview of the SOC's active workload.
 
 ### 4. Real-Time Intelligence & Analytics
 - **Intelligence Dashboard:** The main dashboard provides a high-level overview with:
@@ -34,7 +37,7 @@ This project demonstrates a sophisticated "single pane of glass" UI for monitori
 
 ### 5. Simulated Self-Learning Engine
 - **Bidirectional Communication:** The UI visualizes the complete security loop: agents send telemetry, the server learns, and the server pushes actionable intelligence back to the agents.
-- **Multi-Source Intelligence Fusion:** The simulation demonstrates the server learning from a wide array of external sources, including **MITRE ATT&CK, NVD, EPSS, Exploit-DB, VirusTotal,** and other security vendors.
+- **Multi-Source Intelligence Fusion:** The simulation demonstrates the server learning from a wide array of external sources, including **MITRE ATT&CK, NVD, EPSS, Exploit-DB, VirusTotal, Grok AI Analysis,** and other security vendors.
 - **Context-Aware AI:** The server learns from the geographical and industry context of threats to issue targeted, proactive alerts to agents in high-risk trajectories.
 - **Automated Security Actions:** The simulation visualizes the server taking automated actions for the most critical threats, such as triggering a host remediation.
 

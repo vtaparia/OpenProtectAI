@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { ServerEvent, DirectivePush, AllEventTypes, AgentUpgradeDirective } from '../types';
 import { DirectiveIcon } from './icons/DirectiveIcon';
@@ -37,7 +38,8 @@ const DirectivePushItem: React.FC<DirectivePushItemProps> = ({ event, onSelectIt
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
               {details}
             </span>
-            <span className="text-xs text-gray-500">{event.timestamp}</span>
+            {/* Provided a locale to toLocaleTimeString for consistent time formatting. */}
+            <span className="text-xs text-gray-500">{new Date(event.timestamp).toLocaleTimeString('en-US')}</span>
           </div>
         </div>
       </div>
