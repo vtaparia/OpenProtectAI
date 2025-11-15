@@ -1,8 +1,11 @@
+
 # OpenProtectAI
 
 A dynamic, enterprise-ready admin console that simulates an AI-powered, self-learning cybersecurity platform, complete with an expert AI assistant for real-time architectural design and guidance.
 
 This project demonstrates a sophisticated "single pane of glass" UI for monitoring and managing a global fleet of security agents, visualizing the server's intelligence-gathering process, and interacting with a powerful AI architect.
+
+**[➡️ View API Documentation](./docs/api.md)**
 
 ## Core Features
 
@@ -15,25 +18,30 @@ This project demonstrates a sophisticated "single pane of glass" UI for monitori
 - **Enterprise-Grade Asset Table:** A dedicated "Agent Fleet" view provides a powerful interface for managing a diverse fleet of simulated agents (Windows, Linux, macOS, Mobile, IoT, etc.).
 - **Sort, Filter & Search:** The agent list features sortable columns for key attributes (Status, OS, IP, Version, etc.) and allows for dynamic filtering by OS and searching by hostname/IP.
 - **Interactive Drill-Down:** A master-detail layout allows you to select any agent from the master table to instantly view its specific security posture, configuration, and a real-time feed of its raw alerts.
+- **Remediation History:** View a complete audit trail of all automated remediation actions (e.g., host isolation) taken on a specific agent.
 
-### 3. Real-Time Intelligence & Analytics
+### 3. Incident Response & Case Management
+- **One-Click Case Creation:** Analysts can create an investigation "Case" from any high or critical severity alert directly within the Agent Fleet view. This assigns a unique Case ID for tracking.
+- **Open Cases Dashboard:** The main dashboard includes a real-time summary of open cases by status (New, In Progress, Resolved), providing an at-a-glance overview of the SOC's active workload.
+
+### 4. Real-Time Intelligence & Analytics
 - **Intelligence Dashboard:** The main dashboard provides a high-level overview with:
     - **Server & Agent Knowledge Meters:** Visualize the intelligence level of the server and the agent fleet.
-    - **Threat Heatmaps:** At-a-glance charts showing the most impacted industries and geographical regions (Continents, Regions, Countries).
+    - **Threat Heatmaps:** At-a-glance charts showing the most impacted industries and geographical regions.
     - **Correlation Activity Graph:** A real-time "heartbeat" graph showing the server's analytical workload.
 - **Server Intelligence Feed:** A live feed of the server's "brain," showing aggregated events, learning from external sources, and proactive security actions.
 - **Click-to-Explore:** Click on any event in any feed to open a focused, full-detail view of its underlying logs and payload data.
 
-### 4. Simulated Self-Learning Engine
-- **Bidirectional Communication:** The UI visualizes the complete, end-to-end security loop: agents send raw telemetry, the server learns, and the server pushes actionable intelligence (rules, models, directives) back to the agents.
+### 5. Simulated Self-Learning Engine
+- **Bidirectional Communication:** The UI visualizes the complete security loop: agents send telemetry, the server learns, and the server pushes actionable intelligence back to the agents.
 - **Multi-Source Intelligence Fusion:** The simulation demonstrates the server learning from a wide array of external sources, including **MITRE ATT&CK, NVD, EPSS, Exploit-DB, VirusTotal,** and other security vendors.
 - **Context-Aware AI:** The server learns from the geographical and industry context of threats to issue targeted, proactive alerts to agents in high-risk trajectories.
-- **Automated Security Actions:** The simulation visualizes the server taking automated actions for the most critical threats, such as triggering a host remediation or enforcing a Zero Trust policy.
+- **Automated Security Actions:** The simulation visualizes the server taking automated actions for the most critical threats, such as triggering a host remediation.
 
-### 5. Operational & Deployment Tooling
-- **Agent Deployment Modal:** A user-friendly modal to generate copy-paste-ready deployment scripts for multiple platforms, including Windows, Linux, macOS, and mobile.
-- **Multi-Cloud Infrastructure Guides:** The deployment modal includes detailed, step-by-step instructions for provisioning and configuring the `LWServer` on both **AWS (EC2)** and **Azure (VM)**.
-- **Agent Configuration:** A settings modal allows administrators to control agent behavior, such as scan frequency, log verbosity, and detection sensitivity.
+### 6. Operational & Deployment Tooling
+- **Agent Deployment Modal:** A user-friendly modal to generate copy-paste-ready deployment scripts for multiple platforms.
+- **Multi-Cloud Infrastructure Guides:** Detailed, step-by-step instructions for provisioning the `LWServer` on both **AWS (EC2)** and **Azure (VM)**.
+- **Agent Configuration & Upgrades:** A settings modal to control agent behavior and a dedicated workflow with a compatibility matrix for managing agent upgrades.
 - **Transparency & Versioning:**
     - The UI displays a version number that opens a **"What's New"** modal with detailed release notes.
     - A **"Learning Analytics"** modal provides a data-driven, verifiable "proof of learning," showing exactly how each event contributes to the server's knowledge growth.
@@ -70,10 +78,6 @@ graph TD
     LW -- "Pushes Updates" --> A2
     LW -- "Pushes Updates" --> A3
 ```
-
--   **Endpoint Agents:** Lightweight clients deployed on a diverse range of devices that collect raw security telemetry.
--   **LWServer (Simulated):** An intermediate server that aggregates telemetry, sanitizes sensitive data, and acts as a local cache for intelligence updates from the central server.
--   **Central Cloud Platform (Simulated):** The "brain" of the operation. It ingests data from all LWServers, fuses it with external threat intelligence, runs ML models, and orchestrates the defense across the entire agent fleet.
 
 ## Technology Stack
 

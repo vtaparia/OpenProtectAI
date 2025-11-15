@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 interface ReleaseNotesModalProps {
@@ -28,30 +29,38 @@ const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ isOpen, onClose }
         onClick={e => e.stopPropagation()}
       >
         <header className="p-4 border-b border-gray-700 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold">What's New in v1.3.0</h2>
+          <h2 className="text-xl font-bold">What's New in v1.4.0</h2>
           <button onClick={onClose} className="text-2xl font-light p-1 rounded-full leading-none hover:bg-gray-700">&times;</button>
         </header>
 
         <main className="p-6 flex-1 overflow-y-auto space-y-4">
-            <h3 className="text-lg font-bold text-gray-100">Agent Action &amp; Remediation Visibility</h3>
+            <h3 className="text-lg font-bold text-gray-100">Incident Response &amp; Case Management</h3>
             
-            <Feature title="New: Agent Remediation History">
-                The Agent Fleet detail view now includes a 'Remediation History' section, showing all automated remediation actions (e.g., host isolation, process termination) taken on the selected agent for a complete audit trail.
+            <Feature title="New: Case Management System">
+                Analysts can now create an investigation "Case" from any high or critical severity alert directly within the Agent Fleet view. This assigns a unique Case ID, allowing for easier tracking and management of security incidents.
+            </Feature>
+            <Feature title="New: Open Cases Dashboard">
+                The main dashboard now includes a new "Open Cases Summary" panel, providing a real-time count of cases by their status (New, In Progress, Resolved) for an at-a-glance overview of the SOC's active workload.
             </Feature>
             
             <div className="border-t border-slate-700 my-6"></div>
 
             <h3 className="text-lg font-bold text-gray-100">Previous Versions</h3>
-            <h4 className="text-md font-semibold text-gray-300 mt-2">v1.2.0 - Enterprise Readiness Overhaul</h4>
-            <div className="space-y-4 mt-2 pl-2 border-l-2 border-slate-700">
+
+            <h4 className="text-md font-semibold text-gray-300 mt-2">v1.3.0 - Agent Action &amp; Remediation Visibility</h4>
+            <div className="space-y-2 mt-2 pl-2 border-l-2 border-slate-700">
+                <Feature title="Agent Remediation History">
+                    The Agent Fleet detail view now includes a 'Remediation History' section, showing all automated remediation actions (e.g., host isolation, process termination) taken on the selected agent for a complete audit trail.
+                </Feature>
+            </div>
+
+            <h4 className="text-md font-semibold text-gray-300 mt-4">v1.2.0 - Enterprise Readiness Overhaul</h4>
+            <div className="space-y-2 mt-2 pl-2 border-l-2 border-slate-700">
                 <Feature title="Enterprise Agent Fleet Management">
-                    A new dedicated 'Agent Fleet' view provides an enterprise-grade asset management interface. Features a powerful table with sortable columns for Status, Hostname, OS, IP Address, and more. Includes filtering and search capabilities.
+                    A dedicated 'Agent Fleet' view with a powerful, sortable, and filterable table for managing all deployed agents.
                 </Feature>
                 <Feature title="Interactive Master-Detail UI">
-                    The console now features a robust master-detail view. Clicking on server intelligence events opens a full-screen detail panel for deep analysis, and the agent fleet view allows for drilling down into a specific agent's posture and alerts.
-                </Feature>
-                <Feature title="Professional UI & Layout">
-                    The entire application was redesigned with a more professional, panel-based layout driven by a new navigation sidebar. This improves clarity, user experience, and resolves all previous scrolling issues.
+                    A more intuitive interface allowing for drill-down into specific server events and agent details from master lists.
                 </Feature>
             </div>
         </main>

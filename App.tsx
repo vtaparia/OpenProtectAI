@@ -1,7 +1,9 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, AgentUpgradeDirective } from './types';
+import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, AgentUpgradeDirective, CaseStatus } from './types';
 import { getChatResponse } from './services/geminiService';
 import Header from './components/Header';
 import { sha256 } from './utils/hashing';
@@ -130,11 +132,18 @@ const vulnerabilityIntelSources: LearningUpdate[] = [
     },
 ];
 
+interface Case {
+    status: CaseStatus;
+    alerts: Alert[];
+}
+
 const App: React.FC = () => {
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [serverEvents, setServerEvents] = useState<ServerEvent[]>([]);
+    // FIX: Provide an empty iterable to the Map constructor. While new Map() is valid, some environments or polyfills may incorrectly require an argument.
+    const [cases, setCases] = useState<Map<string, Case>>(new Map([]));
     const [knowledgeLevel, setKnowledgeLevel] = useState(10);
     const [agentKnowledgeLevel, setAgentKnowledgeLevel] = useState(5);
     const [isDeploymentModalOpen, setDeploymentModalOpen] = useState(false);
@@ -155,7 +164,6 @@ const App: React.FC = () => {
             const newTotal = Math.min(100, currentLevel + points);
             const newEntry: KnowledgeContribution = {
                 id: `log-${Date.now()}-${Math.random()}`,
-// FIX: Using `[]` instead of `undefined` for the locales argument in `toLocaleTimeString` is more robust for ensuring the default locale is used across environments.
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                 source,
                 points,
@@ -383,6 +391,20 @@ const App: React.FC = () => {
         setUpgradeModalOpen(false);
     };
 
+    const handleCreateCase = (alertToCase: Alert) => {
+        const caseId = `CASE-${String(Date.now()).slice(-6)}`;
+        setAlerts(prevAlerts => 
+            prevAlerts.map(alert => 
+                alert.id === alertToCase.id ? { ...alert, caseId } : alert
+            )
+        );
+        setCases(prevCases => {
+            const newCases = new Map(prevCases);
+            newCases.set(caseId, { status: CaseStatus.NEW, alerts: [alertToCase] });
+            return newCases;
+        });
+    };
+
     const renderMainView = () => {
         switch(activeView) {
             case 'Dashboard':
@@ -392,13 +414,14 @@ const App: React.FC = () => {
                         agentKnowledgeLevel={agentKnowledgeLevel}
                         serverEvents={serverEvents}
                         correlationActivity={correlationActivity}
+                        cases={cases}
                         onDeployClick={() => setDeploymentModalOpen(true)}
                         onSettingsClick={() => setSettingsModalOpen(true)}
                         onKnowledgeMeterClick={() => setAnalyticsModalOpen(true)}
                     />
                 );
             case 'Agent Fleet':
-                return <AgentFleetView alerts={alerts} serverEvents={serverEvents} onUpgradeClick={() => setUpgradeModalOpen(true)} />;
+                return <AgentFleetView alerts={alerts} serverEvents={serverEvents} onUpgradeClick={() => setUpgradeModalOpen(true)} onCreateCase={handleCreateCase} />;
             case 'Server Intelligence':
                  return <ServerIntelligenceView events={serverEvents} onSelectItem={handleSelectItem} />;
             default:

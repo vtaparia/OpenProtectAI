@@ -17,6 +17,12 @@ export enum AlertSeverity {
   CRITICAL = 'Critical',
 }
 
+export enum CaseStatus {
+    NEW = 'New',
+    IN_PROGRESS = 'In Progress',
+    RESOLVED = 'Resolved',
+}
+
 export interface Device {
     type: 'Desktop' | 'Server' | 'Mobile' | 'Laptop' | 'IoT Device' | 'Firewall' | 'Cloud VM' | 'Container';
     os: 'Windows' | 'Linux' | 'Android' | 'macOS' | 'Embedded Linux' | 'PAN-OS' | 'Ubuntu';
@@ -43,6 +49,7 @@ export interface Alert {
   description: string;
   timestamp: string;
   raw_data?: Record<string, any> & { device: Device; context: AlertContext }; 
+  caseId?: string;
 }
 
 export type LearningSource = 'MITRE ATT&CK' | 'VirusTotal' | 'AlienVault OTX' | 'CVE Database' | 'Splunk SIEM' | 'Microsoft Defender' | 'NVD/EPSS' | 'OSV' | 'Exploit-DB' | 'Antivirus Detections';
