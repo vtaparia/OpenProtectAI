@@ -90,7 +90,9 @@ function getChatInstance(): Chat {
 
 async function getChatResponse_Gemini(prompt: string) {
   const chatInstance = getChatInstance();
-  const result = await chatInstance.sendMessageStream({ message: prompt });
+  // FIX: The `sendMessageStream` method on a Chat object expects the prompt string directly,
+  // not an object with a `message` property. The provided documentation example appears to be incorrect.
+  const result = await chatInstance.sendMessageStream(prompt);
   return result;
 }
 
