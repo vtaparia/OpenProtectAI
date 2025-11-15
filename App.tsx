@@ -1,6 +1,9 @@
 
+
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity } from './types';
+import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, AgentUpgradeDirective, CaseStatus } from './types';
 import { getChatResponse } from './services/geminiService';
 import Header from './components/Header';
 import { sha256 } from './utils/hashing';
@@ -14,6 +17,7 @@ import AgentFleetView from './components/AgentFleetView';
 import ServerIntelligenceView from './components/ServerIntelligenceView';
 import DeploymentModal from './components/DeploymentModal';
 import ReleaseNotesModal from './components/ReleaseNotesModal';
+import AgentUpgradeModal from './components/AgentUpgradeModal';
 
 
 const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
@@ -128,17 +132,25 @@ const vulnerabilityIntelSources: LearningUpdate[] = [
     },
 ];
 
+interface Case {
+    status: CaseStatus;
+    alerts: Alert[];
+}
+
 const App: React.FC = () => {
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [serverEvents, setServerEvents] = useState<ServerEvent[]>([]);
+    // FIX: Provide an empty iterable to the Map constructor. While new Map() is valid, some environments or polyfills may incorrectly require an argument.
+    const [cases, setCases] = useState<Map<string, Case>>(new Map([]));
     const [knowledgeLevel, setKnowledgeLevel] = useState(10);
     const [agentKnowledgeLevel, setAgentKnowledgeLevel] = useState(5);
     const [isDeploymentModalOpen, setDeploymentModalOpen] = useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isAnalyticsModalOpen, setAnalyticsModalOpen] = useState(false);
     const [isReleaseNotesModalOpen, setReleaseNotesModalOpen] = useState(false);
+    const [isUpgradeModalOpen, setUpgradeModalOpen] = useState(false);
     const [selectedDetailItem, setSelectedDetailItem] = useState<AllEventTypes | null>(null);
     const [contextualThreatTracker, setContextualThreatTracker] = useState<Record<string, { count: number; titles: Set<string> }>>({});
     const [correlationActivity, setCorrelationActivity] = useState<number[]>(new Array(20).fill(0));
@@ -152,8 +164,7 @@ const App: React.FC = () => {
             const newTotal = Math.min(100, currentLevel + points);
             const newEntry: KnowledgeContribution = {
                 id: `log-${Date.now()}-${Math.random()}`,
-                // FIX: Replaced [] with undefined for broader environment compatibility.
-                timestamp: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                 source,
                 points,
                 newTotal,
@@ -250,8 +261,7 @@ const App: React.FC = () => {
         const syncEvent: ServerEvent = {
             id: `se-${Date.now()}-sync`,
             type: 'KNOWLEDGE_SYNC',
-            // FIX: Replaced [] with undefined for broader environment compatibility.
-            timestamp: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             payload: {
                 description: 'Pushed latest threat intelligence models and IOCs to fleet.',
                 version: `v${(agentKnowledgeLevel + 0.1).toFixed(2)}`
@@ -272,8 +282,7 @@ const App: React.FC = () => {
                 const newAlert: Alert = {
                     ...sample,
                     id: `alert-${now.getTime()}`,
-                    // FIX: Replaced [] with undefined for broader environment compatibility.
-                    timestamp: now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                 };
                 setAlerts(prev => [newAlert, ...prev].slice(0, 50));
                 processAlert(newAlert);
@@ -284,8 +293,7 @@ const App: React.FC = () => {
                 const learningEvent: ServerEvent = {
                     id: `se-${now.getTime()}`,
                     type: 'LEARNING_UPDATE',
-                    // FIX: Replaced [] with undefined for broader environment compatibility.
-                    timestamp: now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     payload: source as LearningUpdate,
                 };
                 setServerEvents(prev => [...prev, learningEvent]);
@@ -300,8 +308,7 @@ const App: React.FC = () => {
                      const proactiveAlert: ServerEvent = {
                         id: `se-${now.getTime()}-proactive`,
                         type: 'PROACTIVE_ALERT_PUSH',
-                        // FIX: Replaced [] with undefined for broader environment compatibility.
-                        timestamp: now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                         payload: {
                             title: `Heightened Threat Activity Detected`,
                             threat_summary: `Correlated multiple threats targeting the ${industry} industry in ${region}. Threats include: ${Array.from(data.titles).join(', ')}.`,
@@ -329,7 +336,6 @@ const App: React.FC = () => {
                 window.clearInterval(intervalRef.current);
             }
         };
-    // FIX: Add logKnowledgeContribution to dependency array to prevent stale closures.
     }, [processAlert, knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker, pushKnowledgeSync, logKnowledgeContribution]);
 
 
@@ -373,6 +379,32 @@ const App: React.FC = () => {
         }
     }
 
+    const handleInitiateUpgrade = (version: string, target_os: Device['os'] | 'All') => {
+        const directive: AgentUpgradeDirective = { type: 'AGENT_UPGRADE', version, target_os };
+        const pushEvent: ServerEvent = {
+            id: `se-${Date.now()}-directive-upgrade`,
+            type: 'DIRECTIVE_PUSH',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            payload: { directive } as DirectivePush
+        };
+        setServerEvents(prev => [...prev, pushEvent]);
+        setUpgradeModalOpen(false);
+    };
+
+    const handleCreateCase = (alertToCase: Alert) => {
+        const caseId = `CASE-${String(Date.now()).slice(-6)}`;
+        setAlerts(prevAlerts => 
+            prevAlerts.map(alert => 
+                alert.id === alertToCase.id ? { ...alert, caseId } : alert
+            )
+        );
+        setCases(prevCases => {
+            const newCases = new Map(prevCases);
+            newCases.set(caseId, { status: CaseStatus.NEW, alerts: [alertToCase] });
+            return newCases;
+        });
+    };
+
     const renderMainView = () => {
         switch(activeView) {
             case 'Dashboard':
@@ -382,13 +414,14 @@ const App: React.FC = () => {
                         agentKnowledgeLevel={agentKnowledgeLevel}
                         serverEvents={serverEvents}
                         correlationActivity={correlationActivity}
+                        cases={cases}
                         onDeployClick={() => setDeploymentModalOpen(true)}
                         onSettingsClick={() => setSettingsModalOpen(true)}
                         onKnowledgeMeterClick={() => setAnalyticsModalOpen(true)}
                     />
                 );
             case 'Agent Fleet':
-                return <AgentFleetView alerts={alerts} />;
+                return <AgentFleetView alerts={alerts} serverEvents={serverEvents} onUpgradeClick={() => setUpgradeModalOpen(true)} onCreateCase={handleCreateCase} />;
             case 'Server Intelligence':
                  return <ServerIntelligenceView events={serverEvents} onSelectItem={handleSelectItem} />;
             default:
@@ -421,6 +454,11 @@ const App: React.FC = () => {
             <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
             <LearningAnalyticsModal isOpen={isAnalyticsModalOpen} onClose={() => setAnalyticsModalOpen(false)} log={learningLog} />
             <ReleaseNotesModal isOpen={isReleaseNotesModalOpen} onClose={() => setReleaseNotesModalOpen(false)} />
+            <AgentUpgradeModal 
+                isOpen={isUpgradeModalOpen} 
+                onClose={() => setUpgradeModalOpen(false)} 
+                onInitiateUpgrade={handleInitiateUpgrade} 
+            />
         </div>
     );
 };

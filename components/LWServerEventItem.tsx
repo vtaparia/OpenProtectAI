@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ServerEvent, AggregatedEvent, AllEventTypes } from '../types';
 import { ServerIcon } from './icons/ServerIcon';
@@ -21,6 +22,11 @@ const LWServerEventItem: React.FC<LWServerEventItemProps> = ({ event, onSelectIt
         </div>
         <div className="flex-1">
           <p className="text-sm font-semibold text-gray-200">{payload.title}</p>
+          {payload.context && (
+            <p className="text-xs text-gray-400 mt-1">
+              {payload.context.industry} @ {payload.context.region}
+            </p>
+          )}
            <div className="flex items-center justify-between mt-2">
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
               {payload.severity}
