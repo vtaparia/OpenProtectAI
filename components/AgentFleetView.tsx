@@ -1,13 +1,15 @@
 
 import React, { useState, useMemo } from 'react';
-import { Alert, Device } from '../types';
+import { Alert, Device, ServerEvent, AutomatedRemediation } from '../types';
 import { WindowsIcon, LinuxIcon, AppleIcon, AndroidIcon } from './icons/OSIcons';
 import AlertItem from './AlertItem';
 import PayloadDetailsView from './PayloadDetailsView';
 import { SortIcon } from './icons/SortIcon';
+import RemediationHistoryItem from './RemediationHistoryItem';
 
 interface AgentFleetViewProps {
   alerts: Alert[];
+  serverEvents: ServerEvent[];
 }
 
 const osIcons: Record<Device['os'], React.FC> = {
@@ -23,7 +25,7 @@ const osIcons: Record<Device['os'], React.FC> = {
 type SortKey = keyof Device | 'hostname';
 type SortDirection = 'asc' | 'desc';
 
-const AgentFleetView: React.FC<AgentFleetViewProps> = ({ alerts }) => {
+const AgentFleetView: React.FC<AgentFleetViewProps> = ({ alerts, serverEvents }) => {
   const [selectedAgent, setSelectedAgent] = useState<Device | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [osFilter, setOsFilter] = useState<Device['os'] | 'All'>('All');
@@ -67,6 +69,16 @@ const AgentFleetView: React.FC<AgentFleetViewProps> = ({ alerts }) => {
     return alerts.filter(alert => alert.raw_data?.device.hostname === selectedAgent.hostname);
   }, [selectedAgent, alerts]);
   
+  const remediationHistory = useMemo(() => {
+    if (!selectedAgent) return [];
+    return serverEvents
+        .filter(event => 
+            event.type === 'AUTOMATED_REMEDIATION' && 
+            (event.payload as AutomatedRemediation).target_host === selectedAgent.hostname
+        )
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [selectedAgent, serverEvents]);
+
   const handleSelectAgent = (agent: Device) => {
     setSelectedAgent(agent);
     setSelectedAlert(null); // Reset selected alert when changing agent
@@ -160,6 +172,16 @@ const AgentFleetView: React.FC<AgentFleetViewProps> = ({ alerts }) => {
                     <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
                         <h3 className="text-base font-semibold text-gray-300 mb-2">Device Posture</h3>
                         <PayloadDetailsView payload={selectedAgent} />
+                    </div>
+                     <div>
+                        <h3 className="text-base font-semibold text-gray-300 mb-2 px-1">Remediation History</h3>
+                         {remediationHistory.length > 0 ? (
+                            <div className="space-y-2">
+                                {remediationHistory.map(event => <RemediationHistoryItem key={event.id} event={event} />)}
+                            </div>
+                         ) : (
+                             <p className="text-gray-500 text-center text-xs p-4">No remediation actions recorded for this agent.</p>
+                         )}
                     </div>
                     <div>
                         <h3 className="text-base font-semibold text-gray-300 mb-2 px-1">Recent Alerts</h3>

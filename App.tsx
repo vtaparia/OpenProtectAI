@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity } from './types';
 import { getChatResponse } from './services/geminiService';
@@ -152,7 +151,7 @@ const App: React.FC = () => {
             const newTotal = Math.min(100, currentLevel + points);
             const newEntry: KnowledgeContribution = {
                 id: `log-${Date.now()}-${Math.random()}`,
-                // FIX: Using undefined for locales in toLocaleTimeString for broader compatibility.
+                // FIX: Ensure toLocaleTimeString is called with arguments for locale and options to prevent potential errors in strict environments.
                 timestamp: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                 source,
                 points,
@@ -250,7 +249,6 @@ const App: React.FC = () => {
         const syncEvent: ServerEvent = {
             id: `se-${Date.now()}-sync`,
             type: 'KNOWLEDGE_SYNC',
-            // FIX: Using undefined for locales in toLocaleTimeString for broader compatibility.
             timestamp: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             payload: {
                 description: 'Pushed latest threat intelligence models and IOCs to fleet.',
@@ -272,7 +270,6 @@ const App: React.FC = () => {
                 const newAlert: Alert = {
                     ...sample,
                     id: `alert-${now.getTime()}`,
-                    // FIX: Using undefined for locales in toLocaleTimeString for broader compatibility.
                     timestamp: now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                 };
                 setAlerts(prev => [newAlert, ...prev].slice(0, 50));
@@ -284,7 +281,6 @@ const App: React.FC = () => {
                 const learningEvent: ServerEvent = {
                     id: `se-${now.getTime()}`,
                     type: 'LEARNING_UPDATE',
-                    // FIX: Using undefined for locales in toLocaleTimeString for broader compatibility.
                     timestamp: now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     payload: source as LearningUpdate,
                 };
@@ -300,7 +296,6 @@ const App: React.FC = () => {
                      const proactiveAlert: ServerEvent = {
                         id: `se-${now.getTime()}-proactive`,
                         type: 'PROACTIVE_ALERT_PUSH',
-                        // FIX: Using undefined for locales in toLocaleTimeString for broader compatibility.
                         timestamp: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                         payload: {
                             title: `Heightened Threat Activity Detected`,
@@ -329,7 +324,6 @@ const App: React.FC = () => {
                 window.clearInterval(intervalRef.current);
             }
         };
-    // FIX: Add logKnowledgeContribution to dependency array to prevent stale closures.
     }, [processAlert, knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker, pushKnowledgeSync, logKnowledgeContribution]);
 
 
@@ -388,7 +382,7 @@ const App: React.FC = () => {
                     />
                 );
             case 'Agent Fleet':
-                return <AgentFleetView alerts={alerts} />;
+                return <AgentFleetView alerts={alerts} serverEvents={serverEvents} />;
             case 'Server Intelligence':
                  return <ServerIntelligenceView events={serverEvents} onSelectItem={handleSelectItem} />;
             default:
