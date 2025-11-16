@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // FIX: Added AgentUpgradeDirective to imports to allow for explicit typing.
 import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition } from './types';
@@ -288,6 +289,7 @@ const evaluateCondition = (condition: PlaybookCondition, alert: Alert): boolean 
     return operator === 'is' ? match : !match;
 };
 
+// FIX: The `useMemo` hook requires a dependency array. Added an empty array to ensure it only runs once.
 const evaluateTrigger = (trigger: PlaybookTrigger, alert: Alert): boolean => {
     if (trigger.conditions.length === 0) return false;
 

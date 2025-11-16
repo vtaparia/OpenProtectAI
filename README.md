@@ -14,8 +14,13 @@ This project demonstrates a sophisticated "single pane of glass" UI for monitori
 - **Asset-Centric Navigation:** A master sidebar allows for seamless switching between core views: a high-level **Dashboard**, a detailed **Agent Fleet** management interface, the deep-dive **Server Intelligence** feed, and the powerful **Automation** workspace.
 - **Persistent AI Assistant:** A collapsible chat panel provides constant access to the OpenProtectAI assistant for architectural questions, code generation, and deployment guidance without leaving the console.
 
-### 2. Real-Time Endpoint Agent Simulation
-The platform simulates endpoint agents that monitor systems in real time. They collect running-process lists, CPU/memory usage, network activity, and system telemetry to detect anomalies such as unusual CPU spikes, high memory usage, suspicious outbound traffic, or unsigned processes. Agents send alerts with structured JSON to the local LWServer for aggregation before forwarding them to the central cloud platform. In return, they receive updated security rules, AI models, and behavior profiles.
+### 2. Intelligent Real-Time Endpoint Agent
+The platform's agents provide deep, real-time visibility by performing intelligent, localized analysis. Each agent establishes a baseline of normal behavior for its host, monitoring process execution, CPU/memory utilization, and network activity. It detects anomalies by comparing current activity against this historical baseline and against aggregated intelligence from the LWServer, which provides context from peer devices. This allows the agent to proactively identify threats such as:
+- **Resource Abuse:** A process consuming abnormal CPU or memory compared to its own history or similar processes across the fleet.
+- **Anomalous Network Patterns:** Suspicious outbound traffic that deviates from established norms.
+- **Ransomware Behavior:** The agent detects patterns of rapid, mass file modification, a key indicator of ransomware or wiper malware, and can trigger an immediate alert.
+
+Security-relevant events are reported as structured JSON alerts, providing rich context for the central server's learning engine. Agents also receive updated security rules, AI models, and behavioral profiles from the server to continuously enhance their local detection capabilities.
 
 ### 3. SOAR Playbook Automation
 - **Automation Workspace:** A dedicated "Automation" view provides a user-friendly interface to create, edit, and manage simple, trigger-based automation rules (playbooks).
