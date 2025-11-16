@@ -41,10 +41,12 @@ All communication between agents, LWServers, and the central cloud platform is s
 - **Architectural Visibility:** A dedicated "LWServer Fleet" view visualizes the platform's critical middle tier. It provides a real-time dashboard of all deployed LWServers, which act as the secure aggregation and sanitization points between endpoint agents and the central cloud.
 - **Health & Performance Monitoring:** At a glance, view the operational status, connected agent count, data ingestion rates, and C2 latency for each LWServer in your global deployment.
 - **Agent-to-Server Mapping:** The interactive master-detail interface allows you to select any LWServer to instantly see a list of all endpoint agents that are currently connected to and routing data through it, providing a clear map of your data flow.
+- **LWServer Knowledge Meter:** A new meter on the main dashboard provides visibility into the collective intelligence level of the LWServer tier, showing how effectively it is processing and sanitizing data before it reaches the central server.
 
 ### 6. SOAR Playbook Automation
 - **Automation Workspace:** A dedicated "Automation" view provides a user-friendly interface to create, edit, and manage simple, trigger-based automation rules (playbooks).
 - **No-Code Playbook Editor:** Define "If-This-Then-That" logic to orchestrate security responses. For example: `IF Alert.MITRE_ID IS "T1003.001" THEN Create Case AND Assign to "Tier 2 SOC"`.
+- **Advanced Notification Actions:** Playbooks can be configured to send real-time notifications to external systems like **MS Teams, Slack, or Email**, integrating the platform directly into your existing SOC and IT workflows.
 - **Playbook Version Control:** Every change to a playbook is saved as a new version with change notes. A full version history is available, allowing analysts to view past configurations and instantly roll back to any previous version.
 - **Playbook Engine & Auditing:** The server's core logic runs incoming alerts against active playbooks. When a playbook is triggered, a "Playbook Triggered" event is logged in the Server Intelligence feed for a complete audit trail.
 

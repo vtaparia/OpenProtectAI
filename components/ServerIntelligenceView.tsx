@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { ServerEvent, AllEventTypes } from '../types';
 import LWServerEventItem from './LWServerEventItem';
@@ -9,6 +10,7 @@ import KnowledgeSyncItem from './KnowledgeSyncItem';
 import ProactiveAlertItem from './ProactiveAlertItem';
 import AutomatedRemediationItem from './AutomatedRemediationItem';
 import PlaybookTriggeredItem from './PlaybookTriggeredItem';
+import OutboundNotificationItem from './OutboundNotificationItem';
 
 interface ServerIntelligenceViewProps {
   events: ServerEvent[];
@@ -50,6 +52,8 @@ const ServerIntelligenceView: React.FC<ServerIntelligenceViewProps> = ({ events,
                     return <AutomatedRemediationItem key={event.id} event={event} onSelectItem={onSelectItem}/>;
                 case 'PLAYBOOK_TRIGGERED':
                     return <PlaybookTriggeredItem key={event.id} event={event} onSelectItem={onSelectItem} />;
+                case 'OUTBOUND_NOTIFICATION':
+                    return <OutboundNotificationItem key={event.id} event={event} onSelectItem={onSelectItem} />;
                 default:
                     return null;
             }

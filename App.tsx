@@ -2,9 +2,10 @@
 
 
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // FIX: Added AgentUpgradeDirective to imports to allow for explicit typing.
-import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition, LWServer } from './types';
+import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition, LWServer, OutboundNotification } from './types';
 import { getChatResponse, reinitializeChat, getActiveProvider } from './services/geminiService';
 import Header from './components/Header';
 import { sha256 } from './utils/hashing';
@@ -378,7 +379,7 @@ const evaluateTrigger = (trigger: PlaybookTrigger, alert: Alert): boolean => {
 
 
 const App: React.FC = () => {
-    // FIX: Added missing '=' to correct the useState declaration syntax, resolving multiple downstream type errors.
+    // FIX: Added missing '=' to correct the useState declaration syntax.
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -389,6 +390,7 @@ const App: React.FC = () => {
     const [playbooks, setPlaybooks] = useState<Playbook[]>(initialPlaybooks);
     const [knowledgeLevel, setKnowledgeLevel] = useState(10);
     const [agentKnowledgeLevel, setAgentKnowledgeLevel] = useState(5);
+    const [lwServerKnowledgeLevel, setLwServerKnowledgeLevel] = useState(8);
     const [isDeploymentModalOpen, setDeploymentModalOpen] = useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isAnalyticsModalOpen, setAnalyticsModalOpen] = useState(false);
@@ -498,6 +500,25 @@ const App: React.FC = () => {
                     setServerEvents(prev => [...prev, remediationEvent]);
                     actionsTaken.push('Host Isolated');
                     logKnowledgeContribution(`Playbook Isolated Host: ${alert.raw_data?.device.hostname}`, 1.0);
+                    break;
+                }
+                case 'SEND_SLACK_MESSAGE':
+                case 'SEND_TEAMS_MESSAGE':
+                case 'SEND_EMAIL': {
+                    const notifPayload: OutboundNotification = {
+                        channel: action.type === 'SEND_SLACK_MESSAGE' ? 'Slack' : action.type === 'SEND_TEAMS_MESSAGE' ? 'MS Teams' : 'Email',
+                        destination: action.params?.webhookUrl || action.params?.channel || action.params?.recipient || 'N/A',
+                        alert_title: alert.title,
+                        playbook_name: playbook.name
+                    };
+                    const notificationEvent: ServerEvent = {
+                        id: `se-${Date.now()}-notification`,
+                        type: 'OUTBOUND_NOTIFICATION',
+                        timestamp: new Date().toISOString(),
+                        payload: notifPayload
+                    };
+                    setServerEvents(prev => [...prev, notificationEvent]);
+                    actionsTaken.push(`Notification sent to ${notifPayload.channel}`);
                     break;
                 }
             }
@@ -691,33 +712,47 @@ const App: React.FC = () => {
                 const uniqueAgentsPerLws: Record<string, Set<string>> = {};
                 const recentAlertsByLws: Record<string, number> = {};
                 const currentTimestamp = new Date().getTime();
+                
+                const allAgents = new Map<string, Device>();
 
                 alerts.forEach(alert => {
                     const lwServerId = alert.raw_data?.device.lwServerId;
-                    const hostname = alert.raw_data?.device.hostname;
-                    if (lwServerId && hostname) {
+                    const device = alert.raw_data?.device;
+                    if (device) {
+                        allAgents.set(device.hostname, device);
+                    }
+                    if (lwServerId && device) {
                         if (!uniqueAgentsPerLws[lwServerId]) {
                             uniqueAgentsPerLws[lwServerId] = new Set();
                         }
-                        uniqueAgentsPerLws[lwServerId].add(hostname);
+                        uniqueAgentsPerLws[lwServerId].add(device.hostname);
 
                         if (currentTimestamp - new Date(alert.timestamp).getTime() < 15000) {
                             recentAlertsByLws[lwServerId] = (recentAlertsByLws[lwServerId] || 0) + 1;
                         }
                     }
                 });
-        
-                setLwServers(prevLws => prevLws.map(lws => {
+
+                const updatedLws = initialLwServers.map(lws => {
                     const newLatency = Math.max(30, lws.latencyMs + (Math.random() * 20 - 10));
+                    const agentCount = Array.from(allAgents.values()).filter(a => a.lwServerId === lws.id).length;
+                    // FIX: Explicitly type the status to ensure it matches the LWServer['status'] union type, resolving a type inference issue.
+                    const newStatus: LWServer['status'] = newLatency > 200 ? 'Degraded' : 'Online';
                     return {
                         ...lws,
-                        connectedAgentCount: uniqueAgentsPerLws[lws.id]?.size || 0,
+                        connectedAgentCount: agentCount,
                         ingestionRate: parseFloat(((recentAlertsByLws[lws.id] || 0) / 15).toFixed(2)),
                         latencyMs: parseFloat(newLatency.toFixed(0)),
                         egressRate: parseFloat((Math.random() * 5).toFixed(2)),
-                        status: newLatency > 200 ? 'Degraded' : 'Online',
-                    }
-                }));
+                        status: newStatus,
+                    };
+                });
+                setLwServers(updatedLws);
+
+                const totalIngestion = updatedLws.reduce((acc, lws) => acc + lws.ingestionRate, 0);
+                const avgLatency = updatedLws.reduce((acc, lws) => acc + lws.latencyMs, 0) / (updatedLws.length || 1);
+                const knowledge = Math.min(100, 5 + (totalIngestion * 5) - (avgLatency / 10));
+                setLwServerKnowledgeLevel(parseFloat(Math.max(0, knowledge).toFixed(1)));
             }
 
             Object.entries(contextualThreatTracker).forEach(([key, data]) => {
@@ -840,6 +875,7 @@ const App: React.FC = () => {
                     <DashboardView 
                         serverKnowledgeLevel={knowledgeLevel}
                         agentKnowledgeLevel={agentKnowledgeLevel}
+                        lwServerKnowledgeLevel={lwServerKnowledgeLevel}
                         serverEvents={serverEvents}
                         correlationActivity={correlationActivity}
                         cases={cases}

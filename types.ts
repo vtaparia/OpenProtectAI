@@ -95,13 +95,19 @@ export interface PlaybookTrigger {
     conditions: PlaybookCondition[];
 }
 
+export type PlaybookActionType = 'CREATE_CASE' | 'ASSIGN_CASE' | 'ISOLATE_HOST' | 'SEND_SLACK_MESSAGE' | 'SEND_TEAMS_MESSAGE' | 'SEND_EMAIL';
 
 export interface PlaybookAction {
-    type: 'CREATE_CASE' | 'ASSIGN_CASE' | 'ISOLATE_HOST';
+    type: PlaybookActionType;
     params?: {
-        assignee?: string; // For ASSIGN_CASE
+        assignee?: string;      // For ASSIGN_CASE
+        webhookUrl?: string;    // For SLACK, TEAMS
+        channel?: string;       // For SLACK
+        recipient?: string;     // For EMAIL
+        subject?: string;       // For EMAIL
     };
 }
+
 
 export interface PlaybookVersion {
     versionId: string;
@@ -128,12 +134,20 @@ export interface PlaybookTriggered {
     actions_taken: string[];
 }
 
+export interface OutboundNotification {
+    channel: 'Slack' | 'MS Teams' | 'Email';
+    destination: string; // webhook url, channel name, or email address
+    alert_title: string;
+    playbook_name: string;
+}
+
+
 // --- SERVER EVENT TYPES ---
 export interface ServerEvent {
   id:string;
-  type: 'AGGREGATED_EVENT' | 'LEARNING_UPDATE' | 'DIRECTIVE_PUSH' | 'KNOWLEDGE_SYNC' | 'PROACTIVE_ALERT_PUSH' | 'AUTOMATED_REMEDIATION' | 'PLAYBOOK_TRIGGERED';
+  type: 'AGGREGATED_EVENT' | 'LEARNING_UPDATE' | 'DIRECTIVE_PUSH' | 'KNOWLEDGE_SYNC' | 'PROACTIVE_ALERT_PUSH' | 'AUTOMATED_REMEDIATION' | 'PLAYBOOK_TRIGGERED' | 'OUTBOUND_NOTIFICATION';
   timestamp: string;
-  payload: AggregatedEvent | LearningUpdate | DirectivePush | KnowledgeSync | ProactiveAlertPush | AutomatedRemediation | PlaybookTriggered;
+  payload: AggregatedEvent | LearningUpdate | DirectivePush | KnowledgeSync | ProactiveAlertPush | AutomatedRemediation | PlaybookTriggered | OutboundNotification;
 }
 
 // Represents one or more agent alerts, aggregated and sanitized

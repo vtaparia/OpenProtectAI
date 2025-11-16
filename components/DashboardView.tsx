@@ -14,10 +14,12 @@ import { GlobeIcon } from './icons/GlobeIcon';
 import { CaseIcon } from './icons/CaseIcon';
 import KnowledgeGraph from './KnowledgeGraph';
 import { KnowledgeGraphIcon } from './icons/KnowledgeGraphIcon';
+import LWServerKnowledgeMeter from './LWServerKnowledgeMeter';
 
 interface DashboardViewProps {
   serverKnowledgeLevel: number;
   agentKnowledgeLevel: number;
+  lwServerKnowledgeLevel: number;
   serverEvents: ServerEvent[];
   correlationActivity: number[];
   cases: Map<string, Case>;
@@ -30,6 +32,7 @@ interface DashboardViewProps {
 const DashboardView: React.FC<DashboardViewProps> = ({
   serverKnowledgeLevel,
   agentKnowledgeLevel,
+  lwServerKnowledgeLevel,
   serverEvents,
   correlationActivity,
   cases,
@@ -69,12 +72,15 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
         </div>
         <div className={themeStyles.gap}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <div className={`p-4 rounded-lg ${themeStyles.bgPanel} ${themeStyles.border}`}>
                     <ServerKnowledgeMeter level={serverKnowledgeLevel} onClick={onKnowledgeMeterClick} themeStyles={themeStyles} />
                 </div>
                 <div className={`p-4 rounded-lg ${themeStyles.bgPanel} ${themeStyles.border}`}>
                     <AgentKnowledgeMeter level={agentKnowledgeLevel} themeStyles={themeStyles} />
+                </div>
+                 <div className={`p-4 rounded-lg ${themeStyles.bgPanel} ${themeStyles.border}`}>
+                    <LWServerKnowledgeMeter level={lwServerKnowledgeLevel} themeStyles={themeStyles} />
                 </div>
                 <div className={`p-4 rounded-lg ${themeStyles.bgPanel} ${themeStyles.border}`}>
                     <h3 className={`text-base font-bold mb-3 flex items-center gap-2 ${themeStyles.textSecondary}`}>

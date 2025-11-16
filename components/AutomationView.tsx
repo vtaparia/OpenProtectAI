@@ -1,11 +1,14 @@
 
 
+
 import React, { useState } from 'react';
-import { Playbook, PlaybookAction, PlaybookTrigger, AlertSeverity, PlaybookVersion, PlaybookCondition } from '../types';
+import { Playbook, PlaybookAction, PlaybookTrigger, AlertSeverity, PlaybookVersion, PlaybookCondition, PlaybookActionType } from '../types';
 import { AutomationIcon } from './icons/NavIcons';
 import { PlaybookIcon } from './icons/PlaybookIcon';
 import PlaybookHistoryModal from './PlaybookHistoryModal';
 import { HistoryIcon } from './icons/HistoryIcon';
+import { SlackIcon, TeamsIcon, EmailIcon } from './icons/NotificationIcons';
+
 
 interface AutomationViewProps {
     playbooks: Playbook[];
@@ -35,8 +38,20 @@ const PlaybookEditorModal: React.FC<{
 
     const [createCase, setCreateCase] = useState(activeVersion?.actions.some(a => a.type === 'CREATE_CASE') || false);
     const [assignTo, setAssignTo] = useState(activeVersion?.actions.find(a => a.type === 'ASSIGN_CASE')?.params?.assignee || 'None');
+    const [isolateHost, setIsolateHost] = useState(activeVersion?.actions.some(a => a.type === 'ISOLATE_HOST') || false);
 
-    const analysts = ['None', 'Tier 1 SOC', 'Tier 2 SOC', 'Alice', 'Bob'];
+    const [sendSlack, setSendSlack] = useState(activeVersion?.actions.some(a => a.type === 'SEND_SLACK_MESSAGE') || false);
+    const [slackWebhook, setSlackWebhook] = useState(activeVersion?.actions.find(a => a.type === 'SEND_SLACK_MESSAGE')?.params?.webhookUrl || '');
+    
+    const [sendTeams, setSendTeams] = useState(activeVersion?.actions.some(a => a.type === 'SEND_TEAMS_MESSAGE') || false);
+    const [teamsWebhook, setTeamsWebhook] = useState(activeVersion?.actions.find(a => a.type === 'SEND_TEAMS_MESSAGE')?.params?.webhookUrl || '');
+
+    const [sendEmail, setSendEmail] = useState(activeVersion?.actions.some(a => a.type === 'SEND_EMAIL') || false);
+    const [emailRecipient, setEmailRecipient] = useState(activeVersion?.actions.find(a => a.type === 'SEND_EMAIL')?.params?.recipient || '');
+    const [emailSubject, setEmailSubject] = useState(activeVersion?.actions.find(a => a.type === 'SEND_EMAIL')?.params?.subject || 'Security Alert from OpenProtectAI');
+
+
+    const analysts = ['None', 'Tier 1 SOC', 'Tier 2 SOC', 'Vulnerability Management', 'Alice', 'Bob'];
 
     const handleConditionChange = (index: number, field: keyof PlaybookCondition, value: string) => {
         const newConditions = [...conditions];
@@ -77,12 +92,13 @@ const PlaybookEditorModal: React.FC<{
         }
 
         const actions: PlaybookAction[] = [];
-        if (createCase) {
-            actions.push({ type: 'CREATE_CASE' });
-        }
-        if (assignTo !== 'None') {
-            actions.push({ type: 'ASSIGN_CASE', params: { assignee: assignTo }});
-        }
+        if (createCase) actions.push({ type: 'CREATE_CASE' });
+        if (assignTo !== 'None') actions.push({ type: 'ASSIGN_CASE', params: { assignee: assignTo }});
+        if (isolateHost) actions.push({ type: 'ISOLATE_HOST' });
+        if (sendSlack && slackWebhook.trim()) actions.push({ type: 'SEND_SLACK_MESSAGE', params: { webhookUrl: slackWebhook.trim() } });
+        if (sendTeams && teamsWebhook.trim()) actions.push({ type: 'SEND_TEAMS_MESSAGE', params: { webhookUrl: teamsWebhook.trim() } });
+        if (sendEmail && emailRecipient.trim()) actions.push({ type: 'SEND_EMAIL', params: { recipient: emailRecipient.trim(), subject: emailSubject.trim() } });
+
 
         onSave({
             name,
@@ -179,17 +195,42 @@ const PlaybookEditorModal: React.FC<{
                     </div>
                     <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-lg font-semibold mb-2">Actions ("THEN")</h3>
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2">
-                                <input type="checkbox" checked={createCase} onChange={e => setCreateCase(e.target.checked)} className="h-4 w-4 rounded bg-slate-700 text-cyan-500" />
-                                <span>Create Case</span>
-                            </label>
-                             <div className="flex items-center gap-2">
-                                <input type="checkbox" checked={assignTo !== 'None'} onChange={e => setAssignTo(e.target.checked ? analysts[1] : 'None')} className="h-4 w-4 rounded bg-slate-700 text-cyan-500" />
-                                <span>Assign Case to:</span>
-                                <select value={assignTo} onChange={e => setAssignTo(e.target.value)} disabled={assignTo === 'None'} className="bg-slate-700 rounded p-1 disabled:opacity-50">
-                                    {analysts.map(a => <option key={a} value={a}>{a}</option>)}
-                                </select>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 bg-slate-900/50 p-3 rounded-lg">
+                                <h4 className="font-semibold text-gray-400 text-sm">Case Management & Remediation</h4>
+                                <label className="flex items-center gap-2">
+                                    <input type="checkbox" checked={createCase} onChange={e => setCreateCase(e.target.checked)} className="h-4 w-4 rounded bg-slate-700 text-cyan-500" />
+                                    <span>Create Case</span>
+                                </label>
+                                 <div className="flex items-center gap-2">
+                                    <input type="checkbox" checked={assignTo !== 'None'} onChange={e => setAssignTo(e.target.checked ? analysts[1] : 'None')} className="h-4 w-4 rounded bg-slate-700 text-cyan-500" />
+                                    <span>Assign Case to:</span>
+                                    <select value={assignTo} onChange={e => setAssignTo(e.target.value)} disabled={assignTo === 'None'} className="bg-slate-700 rounded p-1 disabled:opacity-50 text-xs">
+                                        {analysts.map(a => <option key={a} value={a}>{a}</option>)}
+                                    </select>
+                                </div>
+                                <label className="flex items-center gap-2">
+                                    <input type="checkbox" checked={isolateHost} onChange={e => setIsolateHost(e.target.checked)} className="h-4 w-4 rounded bg-slate-700 text-cyan-500" />
+                                    <span className="text-orange-400">Isolate Host</span>
+                                </label>
+                            </div>
+                            <div className="space-y-2 bg-slate-900/50 p-3 rounded-lg">
+                                <h4 className="font-semibold text-gray-400 text-sm">Outbound Notifications</h4>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2"><input type="checkbox" checked={sendSlack} onChange={e => setSendSlack(e.target.checked)} /> Send to Slack</label>
+                                    {sendSlack && <input type="text" value={slackWebhook} onChange={e => setSlackWebhook(e.target.value)} placeholder="Slack Webhook URL" className="w-full text-xs bg-slate-700/80 border-slate-600/80 rounded p-1.5" />}
+                                    
+                                    <label className="flex items-center gap-2"><input type="checkbox" checked={sendTeams} onChange={e => setSendTeams(e.target.checked)} /> Send to MS Teams</label>
+                                    {sendTeams && <input type="text" value={teamsWebhook} onChange={e => setTeamsWebhook(e.target.value)} placeholder="Teams Webhook URL" className="w-full text-xs bg-slate-700/80 border-slate-600/80 rounded p-1.5" />}
+                                    
+                                    <label className="flex items-center gap-2"><input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)} /> Send Email</label>
+                                    {sendEmail && (
+                                        <div className="space-y-1.5 pl-5">
+                                            <input type="email" value={emailRecipient} onChange={e => setEmailRecipient(e.target.value)} placeholder="Recipient Email" className="w-full text-xs bg-slate-700/80 border-slate-600/80 rounded p-1.5" />
+                                            <input type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Subject" className="w-full text-xs bg-slate-700/80 border-slate-600/80 rounded p-1.5" />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -264,6 +305,15 @@ const AutomationView: React.FC<AutomationViewProps> = ({ playbooks, setPlaybooks
     const renderTrigger = (trigger: PlaybookTrigger) => {
         return trigger.conditions.map(c => `alert.${c.field} ${c.operator} "${c.value}"`).join(` ${trigger.logicalOperator} `);
     }
+    
+    const actionIcons: Record<PlaybookActionType, React.ReactNode> = {
+        'SEND_SLACK_MESSAGE': <SlackIcon />,
+        'SEND_TEAMS_MESSAGE': <TeamsIcon />,
+        'SEND_EMAIL': <EmailIcon />,
+        'CREATE_CASE': null,
+        'ASSIGN_CASE': null,
+        'ISOLATE_HOST': null,
+    };
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-lg">
@@ -296,6 +346,12 @@ const AutomationView: React.FC<AutomationViewProps> = ({ playbooks, setPlaybooks
                                                     <span className="font-semibold text-gray-400">Active Version:</span> {playbook.versions.length} ({new Date(activeVersion.createdAt).toLocaleString()})
                                                 </p>
                                                 <p className="italic">"{activeVersion.notes}" - {activeVersion.author}</p>
+                                            </div>
+                                            <div className="mt-2 flex items-center gap-2">
+                                                {activeVersion.actions.map(action => {
+                                                    const icon = actionIcons[action.type];
+                                                    return icon ? <span key={action.type} title={action.type}>{icon}</span> : null;
+                                                })}
                                             </div>
                                         </>
                                     )}

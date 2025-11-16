@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { WindowsIcon, LinuxIcon, AppleIcon, AndroidIcon, AWSIcon, AzureIcon } from './icons/OSIcons';
 
@@ -148,6 +149,7 @@ const DeploymentModal: React.FC<DeploymentModalProps> = ({ isOpen, onClose }) =>
         <main className="p-6 flex-1 flex flex-col md:flex-row gap-6 min-h-[50vh]">
             <nav className="md:w-1/3 space-y-2">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Select Target Platform</h3>
+                <p className="text-xs text-gray-500 mt-1 mb-2">These options generate scripts for installing endpoint agents.</p>
                 {Object.keys(platformConfig).map(p => {
                     const plat = p as Platform;
                     const Icon = platformConfig[plat].icon;
