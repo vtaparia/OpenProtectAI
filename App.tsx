@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // FIX: Added AgentUpgradeDirective to imports to allow for explicit typing.
 import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition } from './types';
@@ -668,9 +663,9 @@ const App: React.FC = () => {
                 window.clearInterval(intervalRef.current);
             }
         };
-    // FIX: Removed processAlert and logKnowledgeContribution from dependency array.
-    // As they are stable useCallback functions, this prevents potential bugs from stale closures without causing missed updates.
-    }, [knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker]);
+    // The main simulation loop. processAlert is included as a dependency to ensure
+    // that any updates to playbooks are correctly picked up by the alert processor.
+    }, [knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker, processAlert]);
 
 
     const handleSend = async (prompt: string) => {
