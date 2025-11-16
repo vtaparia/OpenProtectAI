@@ -5,7 +5,7 @@
 This document outlines the core APIs for the self-learning security platform. The endpoints are designed to be asynchronous, accepting data for processing into the main analysis pipeline.
 
 ## Authentication
-In a production environment, these endpoints must be protected. A recommended approach is to use mutual TLS (mTLS), where both the client (LWServer) and the server present client certificates to authenticate each other, aligning perfectly with a Zero Trust model. For user-facing actions like case assignment, standard OAuth 2.0 bearer tokens would be used.
+All service-to-service communication is secured using mutual TLS (mTLS). This is the required authentication mechanism for programmatic access between the LWServer and the Central Server. Both the client and the server must present valid, signed client certificates to authenticate each other, creating a Zero Trust environment where no service is trusted by default. For user-facing actions in a UI context (like case assignment), standard OAuth 2.0 bearer tokens would be used.
 
 ---
 
