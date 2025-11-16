@@ -289,6 +289,28 @@ const initialPlaybooks: Playbook[] = [
                 ],
             }
         ]
+    },
+    {
+        id: 'playbook-4',
+        name: 'Handle High CPU Alerts',
+        description: 'Automatically isolates hosts exhibiting anomalous CPU usage to prevent resource hijacking.',
+        is_active: true,
+        activeVersionId: 'pv-4-initial',
+        versions: [
+            {
+                versionId: 'pv-4-initial',
+                createdAt: '2024-07-26T14:00:00.000Z',
+                author: 'SOC Analyst',
+                notes: 'Initial version to automatically isolate hosts with high CPU usage spikes.',
+                trigger: {
+                    logicalOperator: 'AND',
+                    conditions: [{ field: 'title', operator: 'is', value: 'Anomalous CPU Usage Spike' }]
+                },
+                actions: [
+                    { type: 'ISOLATE_HOST' },
+                ],
+            }
+        ]
     }
 ];
 
@@ -751,6 +773,7 @@ const App: React.FC = () => {
                         correlationActivity={correlationActivity}
                         cases={cases}
                         onDeployClick={() => setDeploymentModalOpen(true)}
+                        // FIX: The `setSettingsModalOpen` state setter was called without an argument, causing a runtime error. It now correctly receives `true` to open the modal.
                         onSettingsClick={() => setSettingsModalOpen(true)}
                         // FIX: The `setAnalyticsModalOpen` state setter was called without an argument, causing a runtime error. It now correctly receives `true` to open the modal.
                         onKnowledgeMeterClick={() => setAnalyticsModalOpen(true)}
