@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // FIX: Added AgentUpgradeDirective to imports to allow for explicit typing.
 import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective } from './types';
@@ -146,14 +147,25 @@ const initialPlaybooks: Playbook[] = [
         name: 'Auto-Triage Credential Dumping on Servers',
         description: 'Automatically creates and assigns a case for any credential dumping attempt on a Windows server.',
         is_active: true,
-        activeVersionId: 'pv-1-initial',
+        activeVersionId: 'pv-1-2',
         versions: [
             {
                 versionId: 'pv-1-initial',
-                createdAt: new Date().toISOString(),
+                createdAt: '2024-01-01T12:00:00.000Z',
                 author: 'System',
                 notes: 'Initial playbook creation.',
                 trigger: { field: 'mitre_mapping.id', operator: 'is', value: 'T1003.001' },
+                actions: [
+                    { type: 'CREATE_CASE' },
+                    { type: 'ASSIGN_CASE', params: { assignee: 'Tier 2 SOC' } },
+                ],
+            },
+            {
+                versionId: 'pv-1-2',
+                createdAt: '2024-01-02T10:00:00.000Z',
+                author: 'SOC Analyst',
+                notes: "Updated trigger to include High severity alerts for broader coverage.",
+                trigger: { field: 'severity', operator: 'is', value: AlertSeverity.HIGH },
                 actions: [
                     { type: 'CREATE_CASE' },
                     { type: 'ASSIGN_CASE', params: { assignee: 'Tier 2 SOC' } },
@@ -376,6 +388,9 @@ const App: React.FC = () => {
             if (field === 'mitre_mapping.id' && operator === 'is' && alert.mitre_mapping?.id === value) {
                 return true;
             }
+            if (field === 'severity' && operator === 'is' && alert.severity === value) {
+                return true;
+            }
             return false;
         });
 
@@ -407,6 +422,9 @@ const App: React.FC = () => {
                     isMatch = true;
                 }
                 if (field === 'mitre_mapping.id' && operator === 'is' && alert.mitre_mapping?.id === value) {
+                    isMatch = true;
+                }
+                if (field === 'severity' && operator === 'is' && alert.severity === value) {
                     isMatch = true;
                 }
                 // Add more complex trigger logic here in the future
