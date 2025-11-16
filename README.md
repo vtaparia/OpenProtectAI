@@ -1,4 +1,5 @@
 
+
 # OpenProtectAI
 
 A dynamic, enterprise-ready admin console that simulates an AI-powered, self-learning cybersecurity platform, complete with an expert AI assistant for real-time architectural design and guidance.
@@ -11,7 +12,7 @@ This project demonstrates a sophisticated "single pane of glass" UI for monitori
 
 ### 1. Unified Enterprise Console
 - **Professional "Single Pane of Glass" UI:** A modern, intuitive layout designed for security operations, providing a comprehensive overview of the entire security ecosystem.
-- **Asset-Centric Navigation:** A master sidebar allows for seamless switching between core views: a high-level **Dashboard**, a detailed **Agent Fleet** management interface, the deep-dive **Server Intelligence** feed, and the powerful **Automation** workspace.
+- **Asset-Centric Navigation:** A master sidebar allows for seamless switching between core views: a high-level **Dashboard**, a detailed **Agent Fleet** management interface, the **LWServer Fleet** view, the deep-dive **Server Intelligence** feed, and the powerful **Automation** workspace.
 - **Persistent AI Assistant:** A collapsible chat panel provides constant access to the OpenProtectAI assistant for architectural questions, code generation, and deployment guidance without leaving the console.
 
 ### 2. Intelligent Real-Time Endpoint Agent
@@ -36,31 +37,36 @@ The platform's core is a self-learning "Central Brain" designed to continuously 
 ### 4. Zero Trust Communication Fabric (mTLS)
 All communication between agents, LWServers, and the central cloud platform is secured using a Zero Trust model. Every service-to-service connection is authenticated and encrypted using **mutual TLS (mTLS)**. This means that every component must present a valid, signed client certificate to establish a connection, preventing unauthorized access, data interception, and man-in-the-middle attacks across the entire architecture.
 
-### 5. SOAR Playbook Automation
+### 5. LWServer Fleet Management
+- **Architectural Visibility:** A dedicated "LWServer Fleet" view visualizes the platform's critical middle tier. It provides a real-time dashboard of all deployed LWServers, which act as the secure aggregation and sanitization points between endpoint agents and the central cloud.
+- **Health & Performance Monitoring:** At a glance, view the operational status, connected agent count, data ingestion rates, and C2 latency for each LWServer in your global deployment.
+- **Agent-to-Server Mapping:** The interactive master-detail interface allows you to select any LWServer to instantly see a list of all endpoint agents that are currently connected to and routing data through it, providing a clear map of your data flow.
+
+### 6. SOAR Playbook Automation
 - **Automation Workspace:** A dedicated "Automation" view provides a user-friendly interface to create, edit, and manage simple, trigger-based automation rules (playbooks).
 - **No-Code Playbook Editor:** Define "If-This-Then-That" logic to orchestrate security responses. For example: `IF Alert.MITRE_ID IS "T1003.001" THEN Create Case AND Assign to "Tier 2 SOC"`.
 - **Playbook Version Control:** Every change to a playbook is saved as a new version with change notes. A full version history is available, allowing analysts to view past configurations and instantly roll back to any previous version.
 - **Playbook Engine & Auditing:** The server's core logic runs incoming alerts against active playbooks. When a playbook is triggered, a "Playbook Triggered" event is logged in the Server Intelligence feed for a complete audit trail.
 
-### 6. Advanced Agent Fleet Management
+### 7. Advanced Agent Fleet Management
 - **Enterprise-Grade Asset Table:** A dedicated "Agent Fleet" view provides a powerful interface for managing a diverse fleet of simulated agents (Windows, Linux, macOS, Mobile, IoT, etc.).
 - **Sort, Filter & Search:** The agent list features sortable columns for key attributes (Status, OS, IP, Version, etc.) and allows for dynamic filtering by OS and searching by hostname/IP.
 - **Interactive Drill-Down:** A master-detail layout allows you to select any agent from the master table to instantly view its specific security posture, configuration, and a real-time feed of its raw alerts.
 - **Remediation History:** View a complete audit trail of all automated remediation actions (e.g., host isolation) taken on a specific agent.
 
-### 7. Incident Response & Case Management
+### 8. Incident Response & Case Management
 - **One-Click Case Creation:** Analysts can create an investigation "Case" from any high or critical severity alert directly within the Agent Fleet view.
 - **Case Assignment Workflow:** New cases can be assigned to specific security analysts or teams. Assigned cases automatically transition to an "In Progress" state, and the assignee is clearly displayed on the alert.
 - **Case Resolution:** Analysts can resolve "In Progress" cases, adding mandatory resolution notes to close out the investigation and move the incident to the audit trail.
 - **Incident Review & Audit Trail:** A dedicated "Incident Review" view provides a workspace for SOC managers to review, search, and audit all resolved cases, providing a complete historical record for compliance and post-mortem analysis.
 - **Open Cases Dashboard:** The main dashboard includes a real-time summary of open cases by status (New / Unassigned, In Progress, Resolved), providing an at-a-glance overview of the SOC's active workload.
 
-### 8. MITRE ATT&CK® Coverage View
+### 9. MITRE ATT&CK® Coverage View
 - **Strategic Threat Matrix:** A new "MITRE ATT&CK" view provides a visual matrix of adversary tactics and techniques, allowing security teams to understand their defensive posture at a glance.
 - **Color-Coded Coverage:** The matrix is color-coded to instantly show which techniques have been observed in alerts (detection coverage) and which are handled by active SOAR playbooks (automation coverage).
 - **Identify Defensive Gaps:** Quickly identify critical adversary techniques that have been observed but lack an automated response, helping to prioritize playbook development.
 
-### 9. Real-Time Intelligence & Analytics
+### 10. Real-Time Intelligence & Analytics
 - **Intelligence Dashboard:** The main dashboard provides a high-level overview with:
     - **Server & Agent Knowledge Meters:** Visualize the intelligence level of the server and the agent fleet.
     - **Threat Heatmaps:** At-a-glance charts showing the most impacted industries and geographical regions.
@@ -68,7 +74,7 @@ All communication between agents, LWServers, and the central cloud platform is s
 - **Server Intelligence Feed:** A live feed of the server's "brain," showing aggregated events, learning from external sources, and proactive security actions.
 - **Click-to-Explore:** Click on any event in any feed to open a focused, full-detail view of its underlying logs and payload data.
 
-### 10. Operational & Deployment Tooling
+### 11. Operational & Deployment Tooling
 - **Agent Deployment Modal:** A user-friendly modal to generate copy-paste-ready deployment scripts for multiple platforms.
 - **Multi-Cloud Infrastructure Guides:** Detailed, step-by-step instructions for provisioning the `LWServer` on both **AWS (EC2)** and **Azure (VM)**.
 - **Agent Configuration & Upgrades:** A settings modal to control agent behavior and a dedicated workflow with a compatibility matrix for managing agent upgrades.
@@ -78,7 +84,7 @@ All communication between agents, LWServers, and the central cloud platform is s
 
 ## Architectural Overview
 
-The application simulates a modern, three-tiered security architecture. This design ensures scalability, data privacy, and operational resilience. All communication channels are secured end-to-end using mTLS.
+The application simulates and visualizes a modern, three-tiered security architecture. This design ensures scalability, data privacy, and operational resilience. The **LWServer Fleet** view in the UI provides a real-time operational picture of the middle tier. All communication channels are secured end-to-end using mTLS.
 
 ```mermaid
 graph TD

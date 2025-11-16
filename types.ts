@@ -33,6 +33,17 @@ export interface Case {
     resolved_at?: string;
 }
 
+export interface LWServer {
+    id: string;
+    hostname: string;
+    location: string;
+    status: 'Online' | 'Degraded' | 'Offline';
+    connectedAgentCount: number;
+    ingestionRate: number; // events/sec
+    egressRate: number; // directives/min
+    latencyMs: number;
+}
+
 export interface Device {
     type: 'Desktop' | 'Server' | 'Mobile' | 'Laptop' | 'IoT Device' | 'Firewall' | 'Cloud VM' | 'Container';
     os: 'Windows' | 'Linux' | 'Android' | 'macOS' | 'Embedded Linux' | 'PAN-OS' | 'Ubuntu';
@@ -43,6 +54,7 @@ export interface Device {
     firewall_status: 'Enabled' | 'Disabled';
     disk_encryption: 'Enabled' | 'Disabled';
     status: 'Online' | 'Offline' | 'Alerting';
+    lwServerId: string;
 }
 
 export interface AlertContext {

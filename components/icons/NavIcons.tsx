@@ -1,6 +1,7 @@
 
 
 
+
 import React from 'react';
 
 export const DashboardIcon: React.FC = () => (
@@ -12,6 +13,12 @@ export const DashboardIcon: React.FC = () => (
 export const AgentIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.789-2.75 9.566l-2.75-2.75a21.048 21.048 0 014.25-4.584M12 11V7a2 2 0 012-2h2a2 2 0 012 2v2.5M12 11l-3 3m0 0l-2.5 2.5M15 11l3 3m0 0l2.5 2.5M15 11V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v2.5" />
+    </svg>
+);
+
+export const LWServerIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
     </svg>
 );
 

@@ -1,10 +1,11 @@
 
 
 
-import React from 'react';
-import { DashboardIcon, AgentIcon, ServerIcon, IncidentReviewIcon, AutomationIcon, MitreAttackIcon } from './icons/NavIcons';
 
-export type View = 'Dashboard' | 'Agent Fleet' | 'Server Intelligence' | 'Incident Review' | 'MITRE ATT&CK' | 'Automation';
+import React from 'react';
+import { DashboardIcon, AgentIcon, ServerIcon, IncidentReviewIcon, AutomationIcon, MitreAttackIcon, LWServerIcon } from './icons/NavIcons';
+
+export type View = 'Dashboard' | 'Agent Fleet' | 'LWServer Fleet' | 'Server Intelligence' | 'Incident Review' | 'MITRE ATT&CK' | 'Automation';
 
 interface NavigationSidebarProps {
   activeView: View;
@@ -45,6 +46,13 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ activeView, onVie
             label="Agent Fleet"
             isActive={activeView === 'Agent Fleet'}
             onClick={() => onViewChange('Agent Fleet')}
+            themeStyles={themeStyles}
+        />
+        <NavItem 
+            icon={<LWServerIcon />}
+            label="LWServer Fleet"
+            isActive={activeView === 'LWServer Fleet'}
+            onClick={() => onViewChange('LWServer Fleet')}
             themeStyles={themeStyles}
         />
         <NavItem 

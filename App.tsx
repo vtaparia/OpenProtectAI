@@ -1,8 +1,10 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // FIX: Added AgentUpgradeDirective to imports to allow for explicit typing.
-import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition } from './types';
+import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition, LWServer } from './types';
 import { getChatResponse, reinitializeChat, getActiveProvider } from './services/geminiService';
 import Header from './components/Header';
 import { sha256 } from './utils/hashing';
@@ -23,6 +25,7 @@ import IncidentReviewView from './components/IncidentReviewView';
 import AutomationView from './components/AutomationView';
 import MitreAttackView from './components/MitreAttackView';
 import { Theme, Density, getThemeStyles } from './theme';
+import LWServerFleetView from './components/LWServerFleetView';
 
 
 const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
@@ -34,7 +37,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'svchost.exe', 
             file_count: 1024, 
             pattern: 'mass_encryption.fast',
-            device: { type: 'Desktop', os: 'Windows', hostname: 'FINANCE-PC-01', ip_address: '10.1.5.112', last_seen: '2m ago', agent_version: '3.1.2', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
+            device: { lwServerId: 'lw-useast1', type: 'Desktop', os: 'Windows', hostname: 'FINANCE-PC-01', ip_address: '10.1.5.112', last_seen: '2m ago', agent_version: '3.1.2', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
             context: { industry: 'Financial', country: 'USA', continent: 'North America', region: 'NA-East' }
         },
         mitre_mapping: { tactic: 'Impact', technique: 'Data Encrypted for Impact', id: 'T1486' }
@@ -46,7 +49,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
         raw_data: { 
             process: 'mimikatz.exe', 
             target_process: 'lsass.exe',
-            device: { type: 'Server', os: 'Windows', hostname: 'DC-01', ip_address: '192.18.1.10', last_seen: '10m ago', agent_version: '3.1.1', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
+            device: { lwServerId: 'lw-eucentral1', type: 'Server', os: 'Windows', hostname: 'DC-01', ip_address: '192.18.1.10', last_seen: '10m ago', agent_version: '3.1.1', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
             context: { industry: 'Government', country: 'Germany', continent: 'Europe', region: 'EU-Central' }
         },
         mitre_mapping: { tactic: 'Credential Access', technique: 'OS Credential Dumping: LSASS Memory', id: 'T1003.001' }
@@ -59,7 +62,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'powershell.exe', 
             destination_ip: '104.21.5.19',
             port: 4444,
-            device: { type: 'Desktop', os: 'Windows', hostname: 'HR-PC-22', ip_address: '10.1.6.45', last_seen: '1h ago', agent_version: '3.1.2', firewall_status: 'Disabled', disk_encryption: 'Enabled', status: 'Alerting' },
+            device: { lwServerId: 'lw-useast1', type: 'Desktop', os: 'Windows', hostname: 'HR-PC-22', ip_address: '10.1.6.45', last_seen: '1h ago', agent_version: '3.1.2', firewall_status: 'Disabled', disk_encryption: 'Enabled', status: 'Alerting' },
             context: { industry: 'Healthcare', country: 'UK', continent: 'Europe', region: 'EU-West' }
         },
         mitre_mapping: { tactic: 'Execution', technique: 'Command and Scripting Interpreter: PowerShell', id: 'T1059.001' }
@@ -72,7 +75,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'rundll32.exe',
             memory_address: '0x00007FFD7A4E0000-0x00007FFD7A4F0000',
             signature: 'CobaltStrike.Beacon.Generic',
-            device: { type: 'Server', os: 'Linux', hostname: 'WEB-SRV-03', ip_address: '172.16.30.8', last_seen: '5m ago', agent_version: '3.2.0', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
+            device: { lwServerId: 'lw-apac-tokyo', type: 'Server', os: 'Linux', hostname: 'WEB-SRV-03', ip_address: '172.16.30.8', last_seen: '5m ago', agent_version: '3.2.0', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
             context: { industry: 'Manufacturing', country: 'Japan', continent: 'Asia', region: 'APAC' }
         },
         mitre_mapping: { tactic: 'Command and Control', technique: 'Ingress Tool Transfer', id: 'T1105' }
@@ -85,7 +88,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             application: 'Salesforce',
             username: 'amanda.b',
             password_strength: 'weak',
-            device: { type: 'Laptop', os: 'macOS', hostname: 'MKTG-MAC-05', ip_address: '192.18.10.51', last_seen: 'Just now', agent_version: '3.1.5', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
+            device: { lwServerId: 'lw-useast1', type: 'Laptop', os: 'macOS', hostname: 'MKTG-MAC-05', ip_address: '192.18.10.51', last_seen: 'Just now', agent_version: '3.1.5', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
             context: { industry: 'Retail', country: 'USA', continent: 'North America', region: 'NA-West' }
         }
     },
@@ -97,7 +100,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             process: 'sqlplus.exe',
             user: 'prod_db_user',
             query: 'SELECT * FROM customers;',
-            device: { type: 'Server', os: 'Linux', hostname: 'APP-SRV-01', ip_address: '172.16.30.15', last_seen: '30s ago', agent_version: '3.2.0', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
+            device: { lwServerId: 'lw-eucentral1', type: 'Server', os: 'Linux', hostname: 'APP-SRV-01', ip_address: '172.16.30.15', last_seen: '30s ago', agent_version: '3.2.0', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
             context: { industry: 'Financial', country: 'Brazil', continent: 'South America', region: 'SA-East' }
         }
     },
@@ -108,7 +111,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
         raw_data: {
             url: 'http://totally-safe-bank.com/login',
             application: 'Chrome',
-            device: { type: 'Mobile', os: 'Android', hostname: 'samsung-sm-g998u1', ip_address: '100.80.15.2', last_seen: '1m ago', agent_version: '2.5.1', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
+            device: { lwServerId: 'lw-useast1', type: 'Mobile', os: 'Android', hostname: 'samsung-sm-g998u1', ip_address: '100.80.15.2', last_seen: '1m ago', agent_version: '2.5.1', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
             context: { industry: 'Retail', country: 'Australia', continent: 'Australia', region: 'APAC' }
         }
     },
@@ -122,7 +125,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             cpu_usage_peak: '98%',
             duration_seconds: 75,
             type: 'cpu_anomaly',
-            device: { type: 'Desktop', os: 'Windows', hostname: 'MKTG-PC-08', ip_address: '10.1.7.21', last_seen: '3m ago', agent_version: '3.1.2', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
+            device: { lwServerId: 'lw-useast1', type: 'Desktop', os: 'Windows', hostname: 'MKTG-PC-08', ip_address: '10.1.7.21', last_seen: '3m ago', agent_version: '3.1.2', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
             context: { industry: 'Retail', country: 'Canada', continent: 'North America', region: 'NA-East' }
         },
         mitre_mapping: { tactic: 'Impact', technique: 'Resource Hijacking', id: 'T1496' }
@@ -137,7 +140,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             memory_usage_mb: 850,
             is_signed: false,
             parent_process: 'explorer.exe',
-            device: { type: 'Laptop', os: 'Windows', hostname: 'SALES-LT-15', ip_address: '10.1.8.102', last_seen: '15m ago', agent_version: '3.1.2', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
+            device: { lwServerId: 'lw-useast1', type: 'Laptop', os: 'Windows', hostname: 'SALES-LT-15', ip_address: '10.1.8.102', last_seen: '15m ago', agent_version: '3.1.2', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Online' },
             context: { industry: 'Financial', country: 'USA', continent: 'North America', region: 'NA-West' }
         },
         mitre_mapping: { tactic: 'Execution', technique: 'Scheduled Task/Job', id: 'T1053' }
@@ -153,7 +156,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             destination_ip: '45.77.53.192',
             protocol: 'TCP',
             pattern: 'sustained_high_volume_upload',
-            device: { type: 'Server', os: 'Linux', hostname: 'DB-SRV-02', ip_address: '172.16.40.11', last_seen: '1m ago', agent_version: '3.2.0', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
+            device: { lwServerId: 'lw-eucentral1', type: 'Server', os: 'Linux', hostname: 'DB-SRV-02', ip_address: '172.16.40.11', last_seen: '1m ago', agent_version: '3.2.0', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
             context: { industry: 'Healthcare', country: 'USA', continent: 'North America', region: 'NA-Central' }
         },
         mitre_mapping: { tactic: 'Exfiltration', technique: 'Exfiltration Over C2 Channel', id: 'T1041' }
@@ -168,7 +171,7 @@ const sampleAlerts: Omit<Alert, 'id' | 'timestamp'>[] = [
             modified_dirs: ['C:\\Users\\admin\\Documents', 'C:\\Users\\admin\\Downloads'],
             file_count: 50,
             pattern: 'scattered_writes.abnormal_location',
-            device: { type: 'Desktop', os: 'Windows', hostname: 'FINANCE-PC-01', ip_address: '10.1.5.112', last_seen: '8m ago', agent_version: '3.2.1', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
+            device: { lwServerId: 'lw-apac-tokyo', type: 'Desktop', os: 'Windows', hostname: 'FINANCE-PC-01', ip_address: '10.1.5.112', last_seen: '8m ago', agent_version: '3.2.1', firewall_status: 'Enabled', disk_encryption: 'Enabled', status: 'Alerting' },
             context: { industry: 'Financial', country: 'USA', continent: 'North America', region: 'NA-East' }
         },
         mitre_mapping: { tactic: 'Defense Evasion', technique: 'Masquerading', id: 'T1036' }
@@ -314,6 +317,40 @@ const initialPlaybooks: Playbook[] = [
     }
 ];
 
+const initialLwServers: LWServer[] = [
+    {
+        id: 'lw-useast1',
+        hostname: 'lwserver-us-east-1.prod.acme.corp',
+        location: 'AWS us-east-1',
+        status: 'Online',
+        connectedAgentCount: 0,
+        ingestionRate: 0,
+        egressRate: 0,
+        latencyMs: 55,
+    },
+    {
+        id: 'lw-eucentral1',
+        hostname: 'lwserver-eu-central-1.prod.acme.corp',
+        location: 'Azure eu-central-1',
+        status: 'Online',
+        connectedAgentCount: 0,
+        ingestionRate: 0,
+        egressRate: 0,
+        latencyMs: 120,
+    },
+    {
+        id: 'lw-apac-tokyo',
+        hostname: 'lwserver-apac-tokyo-1.prod.acme.corp',
+        location: 'GCP asia-northeast1',
+        status: 'Degraded',
+        connectedAgentCount: 0,
+        ingestionRate: 0,
+        egressRate: 0,
+        latencyMs: 210,
+    }
+];
+
+
 const evaluateCondition = (condition: PlaybookCondition, alert: Alert): boolean => {
     const { field, operator, value } = condition;
     let alertValue: string | undefined;
@@ -361,6 +398,7 @@ const App: React.FC = () => {
     const [contextualThreatTracker, setContextualThreatTracker] = useState<Record<string, { count: number; titles: Set<string> }>>({});
     const [correlationActivity, setCorrelationActivity] = useState<number[]>(new Array(20).fill(0));
     const [learningLog, setLearningLog] = useState<KnowledgeContribution[]>([]);
+    const [lwServers, setLwServers] = useState<LWServer[]>(initialLwServers);
 
     const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'dark');
     const [density, setDensity] = useState<Density>(() => (localStorage.getItem('density') as Density) || 'comfortable');
@@ -649,6 +687,39 @@ const App: React.FC = () => {
                 setCorrelationActivity(prev => [...prev.slice(1), 12]);
             }
 
+            if (alertCounter.current % 5 === 0) { // Update LWServer stats periodically
+                const uniqueAgentsPerLws: Record<string, Set<string>> = {};
+                const recentAlertsByLws: Record<string, number> = {};
+                const currentTimestamp = new Date().getTime();
+
+                alerts.forEach(alert => {
+                    const lwServerId = alert.raw_data?.device.lwServerId;
+                    const hostname = alert.raw_data?.device.hostname;
+                    if (lwServerId && hostname) {
+                        if (!uniqueAgentsPerLws[lwServerId]) {
+                            uniqueAgentsPerLws[lwServerId] = new Set();
+                        }
+                        uniqueAgentsPerLws[lwServerId].add(hostname);
+
+                        if (currentTimestamp - new Date(alert.timestamp).getTime() < 15000) {
+                            recentAlertsByLws[lwServerId] = (recentAlertsByLws[lwServerId] || 0) + 1;
+                        }
+                    }
+                });
+        
+                setLwServers(prevLws => prevLws.map(lws => {
+                    const newLatency = Math.max(30, lws.latencyMs + (Math.random() * 20 - 10));
+                    return {
+                        ...lws,
+                        connectedAgentCount: uniqueAgentsPerLws[lws.id]?.size || 0,
+                        ingestionRate: parseFloat(((recentAlertsByLws[lws.id] || 0) / 15).toFixed(2)),
+                        latencyMs: parseFloat(newLatency.toFixed(0)),
+                        egressRate: parseFloat((Math.random() * 5).toFixed(2)),
+                        status: newLatency > 200 ? 'Degraded' : 'Online',
+                    }
+                }));
+            }
+
             Object.entries(contextualThreatTracker).forEach(([key, data]) => {
                 // FIX: Cast `data` to its expected type to resolve 'unknown' property access errors.
                 const threatData = data as { count: number; titles: Set<string> };
@@ -688,7 +759,7 @@ const App: React.FC = () => {
         };
     // The main simulation loop. processAlert is included as a dependency to ensure
     // that any updates to playbooks are correctly picked up by the alert processor.
-    }, [knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker, processAlert]);
+    }, [knowledgeLevel, agentKnowledgeLevel, contextualThreatTracker, processAlert, alerts]);
 
 
     const handleSend = async (prompt: string) => {
@@ -790,6 +861,12 @@ const App: React.FC = () => {
                             onAssignCaseClick={(caseId) => setAssignModalInfo({ isOpen: true, caseId })}
                             onResolveCaseClick={(caseId) => setResolveModalInfo({ isOpen: true, caseId })}
                             themeStyles={themeStyles}
+                        />;
+            case 'LWServer Fleet':
+                return <LWServerFleetView 
+                            lwServers={lwServers} 
+                            alerts={alerts}
+                            themeStyles={themeStyles} 
                         />;
             case 'Server Intelligence':
                  return <ServerIntelligenceView events={serverEvents} onSelectItem={handleSelectItem} themeStyles={themeStyles} />;
