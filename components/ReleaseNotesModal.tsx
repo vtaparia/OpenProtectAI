@@ -29,23 +29,33 @@ const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ isOpen, onClose }
         onClick={e => e.stopPropagation()}
       >
         <header className="p-4 border-b border-gray-700 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold">What's New in v1.9.5</h2>
+          <h2 className="text-xl font-bold">What's New in v1.9.6</h2>
           <button onClick={onClose} className="text-2xl font-light p-1 rounded-full leading-none hover:bg-gray-700">&times;</button>
         </header>
 
         <main className="p-6 flex-1 overflow-y-auto space-y-4">
-            <h3 className="text-lg font-bold text-gray-100">Enhanced Agent Simulation & Detections</h3>
+            <h3 className="text-lg font-bold text-gray-100">Advanced SOAR Playbook Triggers</h3>
             
-            <Feature title="New Detection Scenarios">
-                The agent simulation is now more robust, generating alerts for new real-world threat scenarios like Resource Hijacking (cryptomining), high memory usage by unsigned processes, and potential data exfiltration patterns. This provides a richer dataset for analysis and playbook development.
+            <Feature title="Complex Trigger Logic ('AND'/'OR')">
+                The playbook trigger engine now supports multiple conditions with 'AND'/'OR' logic. This allows for the creation of highly specific automation rules, such as `IF severity IS 'High' AND MITRE ID IS 'T1003.001'`.
             </Feature>
-             <Feature title="Documentation Update">
-                The README has been updated to reflect the agent's enhanced capabilities, providing a clearer picture of the end-to-end data flow from endpoint to cloud.
+             <Feature title="Enhanced Playbook Editor">
+                The playbook editor has been redesigned to support the new complex trigger logic. You can now dynamically add and remove conditions and select the logical operator ('AND'/'OR') that joins them.
             </Feature>
-            
+
             <div className="border-t border-slate-700 my-6"></div>
 
             <h3 className="text-lg font-bold text-gray-100">Previous Versions</h3>
+            
+            <h4 className="text-md font-semibold text-gray-300 mt-2">v1.9.5 - Enhanced Agent Simulation</h4>
+            <div className="space-y-2 mt-2 pl-2 border-l-2 border-slate-700">
+                <Feature title="New Detection Scenarios">
+                    The agent simulation is now more robust, generating alerts for new real-world threat scenarios like Resource Hijacking (cryptomining), high memory usage by unsigned processes, and potential data exfiltration patterns. This provides a richer dataset for analysis and playbook development.
+                </Feature>
+                <Feature title="Documentation Update">
+                    The README has been updated to reflect the agent's enhanced capabilities, providing a clearer picture of the end-to-end data flow from endpoint to cloud.
+                </Feature>
+            </div>
             
             <h4 className="text-md font-semibold text-gray-300 mt-2">v1.9.4 - Documentation & Clarity Update</h4>
             <div className="space-y-2 mt-2 pl-2 border-l-2 border-slate-700">
@@ -71,16 +81,6 @@ const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ isOpen, onClose }
                 </Feature>
                 <Feature title="History & Rollback UI">
                     A new "History" button on each playbook opens a modal to view all previous versions. From this view, you can see change notes and instantly revert to any older version by setting it as active.
-                </Feature>
-            </div>
-
-            <h4 className="text-md font-semibold text-gray-300 mt-2">v1.9.1 - Documentation & Stability</h4>
-            <div className="space-y-2 mt-2 pl-2 border-l-2 border-slate-700">
-                <Feature title="Project Cleanup & Stability">
-                    Removed numerous obsolete, duplicate, and empty component files that were causing potential build errors and cluttering the project. The application is now more stable and built from a cleaner, more logical file structure.
-                </Feature>
-                <Feature title="Documentation Polish">
-                    The main README.md and other documentation files have been reviewed and polished for clarity, accuracy, and professionalism, ensuring they reflect the platform's full capabilities.
                 </Feature>
             </div>
             

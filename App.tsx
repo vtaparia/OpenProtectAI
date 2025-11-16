@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // FIX: Added AgentUpgradeDirective to imports to allow for explicit typing.
-import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective } from './types';
+import { ChatMessage, MessageRole, Alert, ServerEvent, AggregatedEvent, LearningUpdate, ProactiveAlertPush, AllEventTypes, DirectivePush, KnowledgeSync, LearningSource, KnowledgeContribution, AutomatedRemediation, Device, AlertSeverity, CaseStatus, Case, Playbook, MitreMapping, YaraRuleUpdateDirective, PlaybookVersion, AgentUpgradeDirective, PlaybookTrigger, PlaybookCondition } from './types';
 import { getChatResponse, reinitializeChat, getActiveProvider } from './services/geminiService';
 import Header from './components/Header';
 import { sha256 } from './utils/hashing';
@@ -200,7 +200,10 @@ const initialPlaybooks: Playbook[] = [
                 createdAt: '2024-01-01T12:00:00.000Z',
                 author: 'System',
                 notes: 'Initial playbook creation.',
-                trigger: { field: 'mitre_mapping.id', operator: 'is', value: 'T1003.001' },
+                trigger: {
+                    logicalOperator: 'AND',
+                    conditions: [{ field: 'mitre_mapping.id', operator: 'is', value: 'T1003.001' }]
+                },
                 actions: [
                     { type: 'CREATE_CASE' },
                     { type: 'ASSIGN_CASE', params: { assignee: 'Tier 2 SOC' } },
@@ -211,7 +214,10 @@ const initialPlaybooks: Playbook[] = [
                 createdAt: '2024-01-02T10:00:00.000Z',
                 author: 'SOC Analyst',
                 notes: "Updated trigger to include High severity alerts for broader coverage.",
-                trigger: { field: 'severity', operator: 'is', value: AlertSeverity.HIGH },
+                trigger: {
+                    logicalOperator: 'AND',
+                    conditions: [{ field: 'severity', operator: 'is', value: AlertSeverity.HIGH }]
+                },
                 actions: [
                     { type: 'CREATE_CASE' },
                     { type: 'ASSIGN_CASE', params: { assignee: 'Tier 2 SOC' } },
@@ -231,7 +237,10 @@ const initialPlaybooks: Playbook[] = [
                 createdAt: '2024-07-25T10:00:00.000Z',
                 author: 'SOC Analyst',
                 notes: 'Initial version to automatically investigate suspicious outbound network traffic.',
-                trigger: { field: 'title', operator: 'is', value: 'Anomalous Network Connection' },
+                trigger: {
+                    logicalOperator: 'AND',
+                    conditions: [{ field: 'title', operator: 'is', value: 'Anomalous Network Connection' }]
+                },
                 actions: [
                     { type: 'CREATE_CASE' },
                     { type: 'ASSIGN_CASE', params: { assignee: 'Tier 2 SOC' } },
@@ -251,7 +260,10 @@ const initialPlaybooks: Playbook[] = [
                 createdAt: '2024-07-25T10:05:00.000Z',
                 author: 'SOC Analyst',
                 notes: 'Initial version to automatically isolate mobile devices that access known phishing links.',
-                trigger: { field: 'title', operator: 'is', value: 'Mobile Phishing Link Access' },
+                trigger: {
+                    logicalOperator: 'AND',
+                    conditions: [{ field: 'title', operator: 'is', value: 'Mobile Phishing Link Access' }]
+                },
                 actions: [
                     { type: 'ISOLATE_HOST' },
                 ],
@@ -259,6 +271,32 @@ const initialPlaybooks: Playbook[] = [
         ]
     }
 ];
+
+const evaluateCondition = (condition: PlaybookCondition, alert: Alert): boolean => {
+    const { field, operator, value } = condition;
+    let alertValue: string | undefined;
+
+    if (field === 'title') alertValue = alert.title;
+    else if (field === 'severity') alertValue = alert.severity;
+    else if (field === 'device.os') alertValue = alert.raw_data?.device.os;
+    else if (field === 'mitre_mapping.id') alertValue = alert.mitre_mapping?.id;
+
+    if (alertValue === undefined) return false;
+
+    const match = alertValue === value;
+    return operator === 'is' ? match : !match;
+};
+
+const evaluateTrigger = (trigger: PlaybookTrigger, alert: Alert): boolean => {
+    if (trigger.conditions.length === 0) return false;
+
+    if (trigger.logicalOperator === 'AND') {
+        return trigger.conditions.every(cond => evaluateCondition(cond, alert));
+    } else { // OR
+        return trigger.conditions.some(cond => evaluateCondition(cond, alert));
+    }
+};
+
 
 const App: React.FC = () => {
     // FIX: Added missing '=' to correct the useState declaration syntax, resolving multiple downstream type errors.
@@ -475,24 +513,11 @@ const App: React.FC = () => {
             });
         }
         
-        // FIX: Correctly check if a playbook handles the alert by accessing the trigger from the active version, resolving a type error.
         const isHandledByPlaybook = playbooks.some(playbook => {
             if (!playbook.is_active) return false;
-            
             const activeVersion = playbook.versions.find(v => v.versionId === playbook.activeVersionId);
             if (!activeVersion) return false;
-
-            const { field, operator, value } = activeVersion.trigger;
-            if (field === 'title' && operator === 'is' && alert.title === value) {
-                return true;
-            }
-            if (field === 'mitre_mapping.id' && operator === 'is' && alert.mitre_mapping?.id === value) {
-                return true;
-            }
-            if (field === 'severity' && operator === 'is' && alert.severity === value) {
-                return true;
-            }
-            return false;
+            return evaluateTrigger(activeVersion.trigger, alert);
         });
 
         if (alert.severity === AlertSeverity.CRITICAL && !isHandledByPlaybook) {
@@ -515,21 +540,7 @@ const App: React.FC = () => {
         playbooks.forEach(playbook => {
             if (playbook.is_active) {
                 const activeVersion = playbook.versions.find(v => v.versionId === playbook.activeVersionId);
-                if (!activeVersion) return;
-
-                const { field, operator, value } = activeVersion.trigger;
-                let isMatch = false;
-                if (field === 'title' && operator === 'is' && alert.title === value) {
-                    isMatch = true;
-                }
-                if (field === 'mitre_mapping.id' && operator === 'is' && alert.mitre_mapping?.id === value) {
-                    isMatch = true;
-                }
-                if (field === 'severity' && operator === 'is' && alert.severity === value) {
-                    isMatch = true;
-                }
-                // Add more complex trigger logic here in the future
-                if (isMatch) {
+                if (activeVersion && evaluateTrigger(activeVersion.trigger, alert)) {
                     executePlaybook(playbook, alert);
                 }
             }

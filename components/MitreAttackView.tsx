@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import { Alert, Playbook } from '../types';
 import { mitreMatrix } from './mitreData';
@@ -55,9 +56,13 @@ const MitreAttackView: React.FC<MitreAttackViewProps> = ({ alerts, playbooks }) 
         const playbookTechniques = new Set<string>();
         playbooks.forEach(playbook => {
             const activeVersion = playbook.versions.find(v => v.versionId === playbook.activeVersionId);
-            if (playbook.is_active && activeVersion?.trigger.field === 'mitre_mapping.id') {
-                playbookTechniques.add(activeVersion.trigger.value);
-                playbookTechniques.add(getBaseTechniqueId(activeVersion.trigger.value));
+            if (playbook.is_active && activeVersion) {
+                activeVersion.trigger.conditions.forEach(condition => {
+                    if (condition.field === 'mitre_mapping.id' && condition.operator === 'is') {
+                        playbookTechniques.add(condition.value);
+                        playbookTechniques.add(getBaseTechniqueId(condition.value));
+                    }
+                });
             }
         });
         

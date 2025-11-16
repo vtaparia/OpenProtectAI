@@ -71,11 +71,17 @@ export interface Alert {
 export type LearningSource = 'MITRE ATT&CK' | 'VirusTotal' | 'AlienVault OTX' | 'CVE Database' | 'Splunk SIEM' | 'Microsoft Defender' | 'NVD/EPSS' | 'OSV' | 'Exploit-DB' | 'Antivirus Detections' | 'Grok AI Analysis';
 
 // --- SOAR PLAYBOOK TYPES ---
-export interface PlaybookTrigger {
+export interface PlaybookCondition {
     field: 'title' | 'severity' | 'device.os' | 'mitre_mapping.id';
     operator: 'is' | 'is_not';
     value: string;
 }
+
+export interface PlaybookTrigger {
+    logicalOperator: 'AND' | 'OR';
+    conditions: PlaybookCondition[];
+}
+
 
 export interface PlaybookAction {
     type: 'CREATE_CASE' | 'ASSIGN_CASE' | 'ISOLATE_HOST';

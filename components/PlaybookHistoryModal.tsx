@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Playbook, PlaybookVersion } from '../types';
+import { Playbook, PlaybookVersion, PlaybookTrigger } from '../types';
 import { HistoryIcon } from './icons/HistoryIcon';
 
 interface PlaybookHistoryModalProps {
@@ -8,11 +9,21 @@ interface PlaybookHistoryModalProps {
     onSetActiveVersion: (playbookId: string, versionId: string) => void;
 }
 
+const renderTrigger = (trigger: PlaybookTrigger) => {
+    return trigger.conditions
+        .map((c, index) => {
+            const prefix = index > 0 ? `${trigger.logicalOperator} ` : 'IF ';
+            return `${prefix}alert.${c.field} IS "${c.value}"`;
+        })
+        .join(' ');
+}
+
+
 const VersionDetails: React.FC<{ version: PlaybookVersion }> = ({ version }) => (
     <div className="mt-2 p-3 bg-slate-900/50 rounded-md text-xs space-y-2">
         <div>
             <h5 className="font-semibold text-gray-300">Trigger</h5>
-            <p className="font-mono text-gray-400">IF alert.{version.trigger.field} IS "{version.trigger.value}"</p>
+            <p className="font-mono text-gray-400">{renderTrigger(version.trigger)}</p>
         </div>
         <div>
             <h5 className="font-semibold text-gray-300">Actions</h5>
