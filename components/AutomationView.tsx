@@ -176,7 +176,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ playbooks, setPlaybooks
                     versionId: newVersionId,
                     createdAt: new Date().toISOString(),
                     author: 'SOC Analyst',
-                    notes: notes || 'Initial playbook creation.',
+                    notes: notes,
                     trigger,
                     actions
                 };
@@ -244,7 +244,7 @@ const AutomationView: React.FC<AutomationViewProps> = ({ playbooks, setPlaybooks
                                     <input type="checkbox" checked={playbook.is_active} onChange={() => handleToggleActive(playbook.id)} className="sr-only peer" />
                                     <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
                                     <span className="ml-3 text-sm font-medium text-gray-300">{playbook.is_active ? 'Active' : 'Inactive'}</span>
-                                </label>
+                                 </label>
                             </div>
                         </div>
                     );
